@@ -1,0 +1,201 @@
+.suggestion-card {
+  display: flex;
+  align-items: stretch;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  transition: all var(--transition-base);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.suggestion-card:hover {
+  border-color: var(--color-primary-light);
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+.suggestion-card:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15), 0 8px 24px rgba(59, 130, 246, 0.12);
+}
+
+.suggestion-content {
+  flex: 1;
+  font-size: var(--text-lg);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  line-height: 1.6;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.template-text {
+  white-space: pre-wrap;
+}
+
+.placeholder-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.placeholder-input-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.placeholder-input {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: var(--font-semibold);
+  color: var(--color-primary);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--color-primary);
+  padding: 0 0.25rem;
+  margin: 0 0.125rem;
+  outline: none;
+  min-width: 3ch;
+  transition: all var(--transition-base);
+  position: relative;
+  z-index: 2;
+}
+
+.placeholder-input.committed {
+  color: var(--color-primary-dark);
+  border-bottom-color: var(--color-primary-dark);
+}
+
+.placeholder-input:focus {
+  border-bottom-width: 3px;
+  background: rgba(59, 130, 246, 0.05);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+
+/* Placeholder hint with typewriter text */
+.placeholder-hint {
+  position: absolute;
+  left: 0.25rem;
+  top: 0;
+  font-weight: var(--font-semibold);
+  color: var(--color-primary);
+  opacity: 0.5;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+/* Typewriter cursor */
+.typewriter-cursor {
+  display: inline-block;
+  color: var(--color-primary);
+  font-weight: var(--font-normal);
+  animation: blink 1s step-end infinite;
+  margin-left: 1px;
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.options-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 120px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  margin-top: 0.25rem;
+  overflow: hidden;
+}
+
+.option-item {
+  display: block;
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  text-align: left;
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.option-item:hover {
+  background: var(--bg-secondary);
+}
+
+.option-item:active {
+  background: var(--bg-tertiary);
+}
+
+/* Rectangle arrow button */
+.suggestion-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+  transition: all var(--transition-base);
+  flex-shrink: 0;
+  border: none;
+  border-left: 1px solid var(--border-color);
+}
+
+.suggestion-arrow.enabled {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: white;
+  cursor: pointer;
+}
+
+.suggestion-arrow.enabled:hover {
+  background: linear-gradient(135deg, var(--color-primary-dark) 0%, #1d4ed8 100%);
+}
+
+.suggestion-arrow.enabled:active {
+  transform: scale(0.98);
+}
+
+.suggestion-arrow.disabled {
+  opacity: 0.5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .suggestion-content {
+    padding: 1rem;
+    font-size: var(--text-base);
+  }
+
+  .suggestion-arrow {
+    width: 50px;
+  }
+
+  .suggestion-arrow svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .options-dropdown {
+    min-width: 100px;
+  }
+
+  .option-item {
+    padding: 0.5rem 0.75rem;
+  }
+}
