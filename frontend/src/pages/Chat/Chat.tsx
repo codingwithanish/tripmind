@@ -26,7 +26,7 @@ const Chat: React.FC = () => {
     const [threadId, setThreadId] = useState<string | null>(null);
     const [messages, setMessages] = useState<ChatMessageItem[]>([]);
     const [suggestions, setSuggestions] = useState<string[]>([]);
-    const [timelineReady, setTimelineReady] = useState(false);
+    const [contextProgress, setContextProgress] = useState(0); // 0-100 progress
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isInitialized, setIsInitialized] = useState(false);
@@ -83,20 +83,23 @@ const Chat: React.FC = () => {
         switch (streamedMsg.type) {
             case 'chat_response':
                 const botMessage: ChatMessageItem = {
-                    id: `bot-${Date.now()}`,
+                    id: `bot-${Date.now()}-${Math.random()}`,
                     content: streamedMsg.content,
                     sender: 'bot',
                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 };
                 setMessages((prev) => [...prev, botMessage]);
+
+                // Update context progress from chat_response (never decreases)
+                if (streamedMsg.timeline_context_collected !== undefined) {
+                    setContextProgress((prev) =>
+                        Math.max(prev, streamedMsg.timeline_context_collected!)
+                    );
+                }
                 break;
 
             case 'suggestions':
                 setSuggestions(streamedMsg.content);
-                break;
-
-            case 'status_change':
-                setTimelineReady(streamedMsg.content.timeline_ready);
                 break;
         }
     }, []);
@@ -224,7 +227,7 @@ const Chat: React.FC = () => {
                     <ChatInput
                         onSend={handleSendMessage}
                         onGenerateTimeline={handleGenerateTimeline}
-                        timelineReady={timelineReady}
+                        contextProgress={contextProgress}
                         disabled={isLoading || !threadId}
                         placeholder="Type your answer..."
                     />

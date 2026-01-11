@@ -6,6 +6,7 @@ import { ApiResponse } from '@types/api.types';
 export interface ChatResponseMessage {
   type: 'chat_response';
   content: string;
+  timeline_context_collected?: number; // 0-100, represents context collection progress
 }
 
 export interface SuggestionsMessage {
@@ -13,14 +14,9 @@ export interface SuggestionsMessage {
   content: string[];
 }
 
-export interface StatusChangeMessage {
-  type: 'status_change';
-  content: {
-    timeline_ready: boolean;
-  };
-}
+// Note: status_change type removed - timeline readiness now comes via timeline_context_collected
 
-export type StreamedMessage = ChatResponseMessage | SuggestionsMessage | StatusChangeMessage;
+export type StreamedMessage = ChatResponseMessage | SuggestionsMessage;
 
 export interface ThreadResponse {
   thread_id: string;
