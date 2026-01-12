@@ -3,10 +3,10 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from '@/components/layout/MainLayout';
 import Home from '@pages/Home';
 import Chat from '@pages/Chat';
+import Timeline from '@pages/Timeline';
 import { ROUTES } from '@utils/constants';
 
 // Placeholder components (to be implemented later)
-const Timeline = () => <div style={{ padding: '2rem' }}>Timeline Page - Coming Soon</div>;
 const MyTravels = () => <div style={{ padding: '2rem' }}>My Travels Page - Coming Soon</div>;
 const Notifications = () => <div style={{ padding: '2rem' }}>Notifications Page - Coming Soon</div>;
 const Login = () => <div style={{ padding: '2rem' }}>Login Page - Coming Soon</div>;

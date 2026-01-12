@@ -2,6 +2,7 @@ import { Router } from 'express';
 import authRoutes from './authRoutes';
 import travelRoutes from './travelRoutes';
 import chatRoutes from './chatRoutes';
+import timelineRoutes from './timelineRoutes';
 
 const router = Router();
 
@@ -9,6 +10,7 @@ const router = Router();
 router.use('/auth', authRoutes);
 router.use('/travels', travelRoutes);
 router.use('/chat', chatRoutes);
+router.use('/timelines', timelineRoutes);
 
 // Health check endpoint
 router.get('/health', (_req, res) => {

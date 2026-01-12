@@ -1,15 +1,35 @@
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 import app from './app';
 import { env } from './config/env';
+import { setupTimelineSocket } from './sockets/timelineSocket';
 
 const PORT = env.PORT;
 
-const server = app.listen(PORT, () => {
+// Create HTTP server
+const httpServer = createServer(app);
+
+// Create Socket.IO server
+const io = new Server(httpServer, {
+  cors: {
+    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+});
+
+// Setup socket handlers
+setupTimelineSocket(io);
+
+// Start server
+httpServer.listen(PORT, () => {
   console.log(`
     ╔═══════════════════════════════════════╗
     ║   TripMind API Server                 ║
     ║   Environment: ${env.NODE_ENV.padEnd(23)} ║
     ║   Port: ${PORT.toString().padEnd(31)} ║
     ║   URL: http://localhost:${PORT.toString().padEnd(15)} ║
+    ║   WebSocket: Enabled                  ║
     ╚═══════════════════════════════════════╝
   `);
 });
@@ -17,7 +37,7 @@ const server = app.listen(PORT, () => {
 // Graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM signal received: closing HTTP server');
-  server.close(() => {
+  httpServer.close(() => {
     console.log('HTTP server closed');
     process.exit(0);
   });
@@ -25,7 +45,7 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
   console.log('SIGINT signal received: closing HTTP server');
-  server.close(() => {
+  httpServer.close(() => {
     console.log('HTTP server closed');
     process.exit(0);
   });
@@ -34,9 +54,11 @@ process.on('SIGINT', () => {
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err: Error) => {
   console.error('Unhandled Promise Rejection:', err);
-  server.close(() => {
+  httpServer.close(() => {
     process.exit(1);
   });
 });
 
-export default server;
+export { io };
+export default httpServer;
+

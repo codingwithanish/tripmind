@@ -1,0 +1,300 @@
+.timeline-chart {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: var(--bg-secondary);
+    cursor: grab;
+    user-select: none;
+}
+
+.timeline-chart:active {
+    cursor: grabbing;
+}
+
+/* Loading state */
+.timeline-chart--loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+}
+
+.timeline-chart__loader {
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.timeline-chart__loader .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto var(--spacing-md);
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Swipe toggle */
+.timeline-chart__swipe-toggle {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+    border: none;
+    color: white;
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+    transition: all var(--transition-base);
+    text-align: center;
+}
+
+.timeline-chart__swipe-toggle:hover {
+    opacity: 0.9;
+}
+
+/* Content container */
+.timeline-chart__content {
+    position: relative;
+    min-height: 100%;
+    transition: all 0.3s ease;
+}
+
+.timeline-chart__svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Cards container */
+.timeline-chart__cards {
+    position: relative;
+    padding: var(--spacing-md);
+    padding-left: 90px;
+    /* Space for spine + arrows */
+}
+
+.timeline-chart__node-row {
+    position: absolute;
+    width: calc(100% - 110px);
+    left: 90px;
+    display: flex;
+    flex-direction: column;
+}
+
+.timeline-chart__elements {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    animation: fadeSlideIn 0.3s ease;
+}
+
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Representations (shown on both views) */
+.timeline-chart__representations {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+}
+
+.representation-card {
+    display: flex;
+    gap: var(--spacing-md);
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-sm) var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+    border-left: 4px solid #f59e0b;
+}
+
+.representation-card__image {
+    width: 50px;
+    height: 50px;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+}
+
+.representation-card__content {
+    flex: 1;
+    min-width: 0;
+}
+
+.representation-card__title {
+    margin: 0 0 var(--spacing-xs) 0;
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: #92400e;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.representation-card__icon {
+    font-size: 16px;
+}
+
+.representation-card__description {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: #a16207;
+    line-height: 1.4;
+}
+
+/* Task and recommendation lists */
+.timeline-chart__tasks,
+.timeline-chart__recommendations {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    max-width: 380px;
+}
+
+/* Additional input (blocking) */
+.timeline-chart__additional-input {
+    background: linear-gradient(135deg, #fce7f3, #fbcfe8);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    max-width: 420px;
+    box-shadow: var(--shadow-md);
+    border: 2px solid #ec4899;
+}
+
+.timeline-chart__question {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: flex-start;
+    margin-bottom: var(--spacing-sm);
+}
+
+.timeline-chart__question-icon {
+    font-size: 20px;
+}
+
+.timeline-chart__question p {
+    margin: 0;
+    font-size: var(--text-base);
+    font-weight: var(--font-medium);
+    color: #831843;
+}
+
+.timeline-chart__blocking-notice {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: rgba(236, 72, 153, 0.2);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    color: #9d174d;
+    margin-bottom: var(--spacing-md);
+}
+
+.timeline-chart__input-container {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.timeline-chart__input {
+    flex: 1;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 2px solid #f9a8d4;
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    background: white;
+    outline: none;
+    transition: border-color var(--transition-base);
+}
+
+.timeline-chart__input:focus {
+    border-color: #ec4899;
+}
+
+.timeline-chart__input-submit {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: #ec4899;
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.timeline-chart__input-submit:hover:not(:disabled) {
+    background: #be185d;
+}
+
+.timeline-chart__input-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Empty state */
+.timeline-chart__empty-state {
+    padding: var(--spacing-lg);
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: var(--text-sm);
+}
+
+.timeline-chart__empty-state p {
+    margin: 0;
+}
+
+/* Custom scrollbar */
+.timeline-chart::-webkit-scrollbar {
+    width: 6px;
+}
+
+.timeline-chart::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.timeline-chart::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: var(--radius-full);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+
+    .timeline-chart__tasks,
+    .timeline-chart__recommendations,
+    .timeline-chart__additional-input {
+        max-width: 280px;
+    }
+
+    .timeline-chart__cards {
+        padding-left: 80px;
+    }
+
+    .timeline-chart__node-row {
+        left: 80px;
+        width: calc(100% - 100px);
+    }
+}

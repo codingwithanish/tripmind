@@ -1,0 +1,15 @@
+.start-card {
+    display: inline-flex;
+    align-items: center;
+    background: #4a6fa5;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(74, 111, 165, 0.3);
+}
+
+.start-card__text {
+    white-space: nowrap;
+}

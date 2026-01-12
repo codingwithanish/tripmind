@@ -1,0 +1,193 @@
+.timeline-node {
+    display: grid;
+    grid-template-columns: 60px auto 1fr;
+    min-height: 80px;
+    position: relative;
+}
+
+/* ========== SPINE ========== */
+.timeline-node__spine {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 10;
+}
+
+.timeline-node__spine-line {
+    width: 4px;
+    background: #4a6fa5;
+    flex: 1;
+}
+
+.timeline-node__spine-line--top {
+    min-height: 30px;
+}
+
+.timeline-node__spine-line--bottom {
+    min-height: 40px;
+}
+
+.timeline-node--end .timeline-node__spine-line {
+    background: #ef4444;
+}
+
+/* ========== DATE BADGE / CONNECTOR AREA ========== */
+.timeline-node__connector-area {
+    display: flex;
+    align-items: flex-start;
+    padding-top: 24px;
+}
+
+.timeline-node__date-badge {
+    background: #4a6fa5;
+    color: white;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 14px;
+    white-space: nowrap;
+    position: relative;
+}
+
+/* Arrow stem extending from date badge */
+.timeline-node__date-badge::after {
+    content: '';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 2px;
+    background: #6b7280;
+}
+
+/* ========== CONTENT AREA ========== */
+.timeline-node__content {
+    padding: 10px 0 20px 0;
+}
+
+/* Single row layout */
+.timeline-node__row--single {
+    display: flex;
+    align-items: center;
+    gap: 0;
+}
+
+.timeline-node__connector-group {
+    display: flex;
+    align-items: center;
+}
+
+/* Simple arrow for single elements */
+.timeline-node__arrow--single {
+    width: 40px;
+    height: 2px;
+    background: #6b7280;
+    position: relative;
+}
+
+.timeline-node__arrow--end {
+    background: #ef4444;
+}
+
+/* Arrowhead */
+.timeline-node__arrowhead {
+    position: absolute;
+    right: -2px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-top: 5px solid transparent;
+    border-bottom: 5px solid transparent;
+    border-left: 8px solid #6b7280;
+}
+
+.timeline-node__arrow--end .timeline-node__arrowhead {
+    border-left-color: #ef4444;
+}
+
+/* ========== BRANCHED LAYOUT ========== */
+.timeline-node__row--branched {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+}
+
+/* Horizontal stem from date badge to branch point */
+.timeline-node__branch-stem {
+    width: 30px;
+    height: 2px;
+    background: #6b7280;
+    margin-top: 30px;
+    /* Align with first card center */
+}
+
+/* Branch container holds vertical line and items */
+.timeline-node__branch-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    position: relative;
+    padding-left: 0;
+}
+
+/* Vertical line connecting all branches */
+.timeline-node__branch-container::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 30px;
+    bottom: 30px;
+    width: 2px;
+    background: #6b7280;
+}
+
+/* Individual branch item */
+.timeline-node__branch-item {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    position: relative;
+}
+
+/* Horizontal arm to each card */
+.timeline-node__branch-arm {
+    width: 30px;
+    height: 2px;
+    background: #6b7280;
+    position: relative;
+}
+
+.timeline-node__branch-arm .timeline-node__arrowhead {
+    right: -2px;
+}
+
+/* Card container */
+.timeline-node__card {
+    flex-shrink: 0;
+}
+
+/* ========== START NODE SPECIAL ========== */
+.timeline-node--start .timeline-node__connector-area {
+    display: none;
+}
+
+.timeline-node--start .timeline-node__content {
+    padding-top: 18px;
+}
+
+/* ========== END NODE SPECIAL ========== */
+.timeline-node--end .timeline-node__connector-area {
+    display: none;
+}
+
+.timeline-node--end .timeline-node__content {
+    padding-top: 18px;
+}
+
+/* ========== ADDITIONAL INPUT NODE ========== */
+.timeline-node--additional_input .timeline-node__date-badge::after {
+    display: none;
+}

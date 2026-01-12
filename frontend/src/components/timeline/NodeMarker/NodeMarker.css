@@ -1,0 +1,90 @@
+.node-marker {
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    z-index: 10;
+    position: relative;
+}
+
+/* Filled markers */
+.node-marker--filled {
+    background-color: #4a6fa5;
+    border: 3px solid white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Open circle markers (for additional_input) */
+.node-marker--open {
+    background-color: transparent;
+    border: 3px solid #4a6fa5;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Size variations */
+.node-marker--small {
+    width: 16px;
+    height: 16px;
+}
+
+.node-marker--medium {
+    width: 24px;
+    height: 24px;
+}
+
+.node-marker--large {
+    width: 32px;
+    height: 32px;
+}
+
+/* Icon inside marker */
+.node-marker__icon {
+    color: white;
+    font-size: 10px;
+    line-height: 1;
+}
+
+.node-marker--open .node-marker__icon {
+    color: #4a6fa5;
+}
+
+.node-marker--large .node-marker__icon {
+    font-size: 14px;
+}
+
+/* End marker styling */
+.node-marker--end {
+    background-color: #ef4444;
+}
+
+/* Representation marker - square icon box variant */
+.node-marker--representation {
+    border-radius: 8px;
+    background: white;
+    border: 2px solid #4a6fa5;
+    width: 48px;
+    height: 48px;
+}
+
+.node-marker--representation .node-marker__icon {
+    color: #4a6fa5;
+    font-size: 20px;
+}
+
+/* Additional input animation */
+.node-marker--additional_input {
+    animation: pulse-blue 2s infinite;
+}
+
+@keyframes pulse-blue {
+
+    0%,
+    100% {
+        box-shadow: 0 2px 8px rgba(74, 111, 165, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 2px 16px rgba(74, 111, 165, 0.6);
+    }
+}
