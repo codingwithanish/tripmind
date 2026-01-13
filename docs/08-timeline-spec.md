@@ -377,6 +377,320 @@ Rendered using:
 
 * * *
 
+### 13.0 WebSocket Response Structure
+
+The `complete-timeline` response contains the full timeline data. Node types are:
+
+| Type | Contains | Description |
+| --- | --- | --- |
+| `start` | None | Trip start marker |
+| `end` | None | Trip end marker |
+| `action` | `tasks` and/or `recommendations` | Actionable planning steps |
+| `representation` | Single `representation` object | Contextual info (weather, alerts) |
+| `additional_input` | Single `additional_input` object | Blocking user input request |
+
+#### Complete Response Example
+
+```json
+{
+  "type": "complete-timeline",
+  "data": {
+    "timeline_id": "550e8400-e29b-41d4-a716-446655440000",
+    "version": 12,
+    "style": "default",
+    "configs": {
+      "display_price_unit": "INR",
+      "timezone": "Asia/Kolkata"
+    },
+    "nodes": [
+      {
+        "id": "node-001",
+        "node_version": 1,
+        "order": 1,
+        "type": "start",
+        "subtype": null,
+        "display_date": {
+          "type": "date",
+          "label": "Jan 10, 2026",
+          "start": "2026-01-10T00:00:00+05:30"
+        }
+      },
+      {
+        "id": "node-002",
+        "node_version": 1,
+        "order": 2,
+        "type": "representation",
+        "subtype": "weather",
+        "display_date": {
+          "type": "date_range",
+          "label": "Jan 10 – Jan 12",
+          "start": "2026-01-10T00:00:00+05:30",
+          "end": "2026-01-12T00:00:00+05:30"
+        },
+        "representation": {
+          "id": "rep-001",
+          "title": "Perfect Beach Weather",
+          "description": "Expect sunny skies with temperatures around 28°C",
+          "icon": "sun",
+          "image": "https://example.com/weather.jpg"
+        }
+      },
+      {
+        "id": "node-003",
+        "node_version": 3,
+        "order": 3,
+        "type": "action",
+        "subtype": "default",
+        "display_date": {
+          "type": "date_range",
+          "label": "Jan 10 – Jan 12",
+          "start": "2026-01-10T00:00:00+05:30",
+          "end": "2026-01-12T00:00:00+05:30"
+        },
+        "tasks": [
+          {
+            "id": "task-001",
+            "execution_state": "completed",
+            "visit_status": "confirmed",
+            "priority": 1,
+            "title": "Book Flight to Goa",
+            "title_image": "https://example.com/flight.jpg",
+            "description": "IndiGo 6E-2034, Departure 6:00 AM from Mumbai",
+            "price": {
+              "type": "confirmed",
+              "unit": "INR",
+              "confirmed_price": 4500
+            }
+          },
+          {
+            "id": "task-002",
+            "execution_state": "pending",
+            "visit_status": "waitinglist",
+            "priority": 2,
+            "title": "Check into Resort",
+            "description": "Taj Exotica - Check-in after 2 PM",
+            "price": {
+              "type": "range",
+              "unit": "INR",
+              "price_range": {
+                "min": 12000,
+                "max": 18000
+              }
+            }
+          }
+        ],
+        "recommendations": [
+          {
+            "id": "rec-001",
+            "action_state": "suggested",
+            "type": "restaurant",
+            "priority": 1,
+            "title": "Fisherman's Wharf",
+            "title_image": "https://example.com/restaurant.jpg",
+            "description": "Famous seafood restaurant with ocean views",
+            "price_included": true,
+            "price_info": {
+              "type": "range",
+              "unit": "INR",
+              "range": {
+                "min": 800,
+                "max": 2000
+              }
+            }
+          },
+          {
+            "id": "rec-002",
+            "action_state": "accepted",
+            "type": "place",
+            "priority": 2,
+            "title": "Dudhsagar Waterfalls",
+            "description": "Scenic waterfall trip - best visited in monsoon",
+            "price_included": false
+          }
+        ]
+      },
+      {
+        "id": "node-004",
+        "node_version": 2,
+        "order": 4,
+        "type": "action",
+        "subtype": "tasks_only",
+        "display_date": {
+          "type": "date",
+          "label": "Jan 13, 2026",
+          "start": "2026-01-13T00:00:00+05:30"
+        },
+        "tasks": [
+          {
+            "id": "task-003",
+            "execution_state": "pending",
+            "visit_status": null,
+            "priority": 1,
+            "title": "Water Sports Session",
+            "description": "Jet skiing and parasailing at Baga Beach",
+            "price": {
+              "type": "confirmed",
+              "unit": "INR",
+              "confirmed_price": 3500
+            }
+          }
+        ]
+      },
+      {
+        "id": "node-005",
+        "node_version": 1,
+        "order": 5,
+        "type": "additional_input",
+        "subtype": null,
+        "display_date": null,
+        "additional_input": {
+          "id": "input-001",
+          "question": "What kind of activities do you prefer - adventure or relaxation?",
+          "response_type": "text",
+          "placeholder": "E.g., water sports, spa, sightseeing...",
+          "is_required": true
+        }
+      },
+      {
+        "id": "node-006",
+        "node_version": 1,
+        "order": 6,
+        "type": "end",
+        "subtype": null,
+        "display_date": {
+          "type": "date",
+          "label": "Jan 15, 2026",
+          "start": "2026-01-15T00:00:00+05:30"
+        }
+      }
+    ]
+  }
+}
+```
+
+#### Action Node Subtypes
+
+| Subtype | Behavior |
+| --- | --- |
+| `default` | Contains both `tasks` and `recommendations` |
+| `tasks_only` | Contains only `tasks`, swipe disabled |
+| `recommendation_only` | Contains only `recommendations` |
+
+* * *
+
+### 13.0.1 Field Definitions
+
+#### Timeline Root Object
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `type` | `string` | Yes | Event type: `"complete-timeline"` |
+| `data` | `object` | Yes | Timeline data payload |
+
+#### Timeline Data Object
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `timeline_id` | `string (UUID)` | Yes | Unique identifier for the timeline |
+| `version` | `integer` | Yes | Timeline version for conflict resolution |
+| `style` | `string` | No | Visual style preset: `"default"` |
+| `configs` | `object` | Yes | Display configuration |
+| `configs.display_price_unit` | `string` | Yes | Currency code: `"INR"`, `"USD"`, etc. |
+| `configs.timezone` | `string` | Yes | IANA timezone: `"Asia/Kolkata"` |
+| `nodes` | `array` | Yes | Array of timeline nodes |
+
+#### Node Base Object (Common Fields)
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | `string` | Yes | Unique node identifier |
+| `node_version` | `integer` | Yes | Node version for partial updates |
+| `order` | `integer` | Yes | Display order (1-indexed) |
+| `type` | `string` | Yes | Node type: `"start"` \| `"end"` \| `"action"` \| `"representation"` \| `"additional_input"` |
+| `subtype` | `string \| null` | No | Node subtype (varies by type) |
+| `display_date` | `object \| null` | No | Date display configuration |
+
+#### DisplayDate Object
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `type` | `string` | Yes | `"date"` \| `"date_range"` \| `"time"` \| `"time_range"` |
+| `label` | `string` | Yes | Formatted display label: `"Jan 10, 2026"` |
+| `start` | `string (ISO 8601)` | Yes | Start datetime with timezone |
+| `end` | `string (ISO 8601)` | No | End datetime (only for range types) |
+
+* * *
+
+#### Task Object (within `action` node)
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | `string` | Yes | Unique task identifier |
+| `execution_state` | `string` | Yes | `"pending"` \| `"in_progress"` \| `"completed"` \| `"skipped"` |
+| `visit_status` | `string \| null` | No | `"confirmed"` \| `"waitinglist"` \| `null` |
+| `priority` | `integer` | Yes | Display priority (lower = higher priority) |
+| `title` | `string` | Yes | Task title |
+| `title_image` | `string (URL)` | No | Optional header image |
+| `description` | `string` | No | Task description |
+| `price` | `object` | No | Price information |
+
+#### Task Price Object
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `type` | `string` | Yes | `"confirmed"` \| `"range"` \| `"constant"` |
+| `unit` | `string` | Yes | Currency code |
+| `confirmed_price` | `number` | Conditional | Exact price (when `type = "confirmed"`) |
+| `price_range` | `object` | Conditional | Price range (when `type = "range"`) |
+| `price_range.min` | `number` | Yes | Minimum price |
+| `price_range.max` | `number` | Yes | Maximum price |
+
+* * *
+
+#### Recommendation Object (within `action` node)
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | `string` | Yes | Unique recommendation identifier |
+| `action_state` | `string` | Yes | `"suggested"` \| `"accepted"` \| `"ignored"` |
+| `type` | `string` | Yes | Category: `"restaurant"` \| `"place"` \| `"activity"` \| `"hotel"` |
+| `priority` | `integer` | Yes | Display priority |
+| `title` | `string` | Yes | Recommendation title |
+| `title_image` | `string (URL)` | No | Optional header image |
+| `description` | `string` | No | Recommendation description |
+| `price_included` | `boolean` | Yes | Whether price is included in trip |
+| `price_info` | `object` | No | Price information (if `price_included = true`) |
+| `price_info.type` | `string` | Yes | `"range"` \| `"confirmed"` \| `"constant"` |
+| `price_info.unit` | `string` | Yes | Currency code |
+| `price_info.range` | `object` | Conditional | `{ min, max }` for range type |
+
+* * *
+
+#### Representation Object (within `representation` node)
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | `string` | Yes | Unique representation identifier |
+| `title` | `string` | Yes | Display title |
+| `description` | `string` | No | Contextual description |
+| `icon` | `string` | No | Icon identifier: `"sun"`, `"rain"`, `"alert"` |
+| `image` | `string (URL)` | No | Optional image |
+
+* * *
+
+#### AdditionalInput Object (within `additional_input` node)
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `id` | `string` | Yes | Unique input identifier |
+| `question` | `string` | Yes | Question prompt for the user |
+| `response_type` | `string` | Yes | Expected response: `"text"` \| `"select"` \| `"multiselect"` \| `"date"` |
+| `placeholder` | `string` | No | Input placeholder text |
+| `is_required` | `boolean` | Yes | Whether response is mandatory |
+| `options` | `array` | Conditional | Options for select/multiselect types |
+
+* * *
+
 ### 13.1 `complete-timeline`
 
 **Purpose:** Full rebuild

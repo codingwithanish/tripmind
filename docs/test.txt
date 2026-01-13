@@ -1,0 +1,129 @@
+Now i want to make few more structure changes in timeline chart in frontend
+1. I want the entire timeline in inside a single folder. Its internal component should be comes as the child folder
+2. I need the basic structure of the timeline like below. SO that i am able to skip or hide a component easily. Not sure about it feasibility, you should check and confirm it. Also you can change the structure as well 
+
+
+<Timeline.Root data={timelineData} style="default">
+  <Timeline.Spine />
+  {nodes.map(node => (
+    <Timeline.Node key={node.id} node={node}>
+	<Timeline.Start>
+      <Timeline.Marker />
+      <Timeline.Connector />
+      <Timeline.Content>
+        <YourCustomCard />
+      </Timeline.Content>
+	  </Timeline.Start>
+	  
+	<Timeline.Activity>
+      <Timeline.Marker />
+      <Timeline.Connector />
+      <Timeline.Content>
+        <YourCustomCard />
+      </Timeline.Content>
+	  </Timeline.Activity>
+	  
+	 <Timeline.Representation>
+      <Timeline.Marker />
+      <Timeline.Connector />
+      <Timeline.Content>
+        <YourCustomCard />
+      </Timeline.Content>
+	  </Timeline.Representation>
+	  
+	  
+	  
+	  
+	  <Timeline.UserInput>
+      <Timeline.Marker />
+      <Timeline.Connector />
+      <Timeline.Content>
+        <YourCustomCard />
+      </Timeline.Content>
+	  </Timeline.UserInput>
+	  
+	  <Timeline.End>
+      <Timeline.Marker />
+      <Timeline.Connector />
+      <Timeline.Content>
+        <YourCustomCard />
+      </Timeline.Content>
+	  </Timeline.End>
+	  
+    </Timeline.Node>
+  ))}
+</Timeline.Root>
+
+4. Also i want to define different style which can completely change the appearance of timeline. currently all details of timelines are defined inside the frontend\src\components\timeline\TimelineChart\TimelineChart.tsx but i want to move it to a  specific file were styles are defined, so that i am able to switch the style easily. currently the colour, stroke, shadow everything is defined in the file itself like below. but i need it to the specific style file in a json format and based on the style defined in the Timeline it should pick the details from that file and apply it. Also i recommend it in a hierarchical pattern, by default there is a default.json style file is there user can create new style file if the values are not applicable in new style file json, then it should be pick from the default.json
+```
+useEffect(() => {
+        if (!svgRef.current || !containerRef.current || !timeline || visibleNodes.length === 0) return;
+
+        const svg = d3.select(svgRef.current);
+        svg.selectAll('*').remove();
+
+        const spineX = 60;
+
+        svg.attr('width', '100%').attr('height', totalHeight);
+
+        const g = svg.append('g');
+
+        // Draw spine line (dynamic height)
+        const lastPos = nodePositions[nodePositions.length - 1];
+        g.append('line')
+            .attr('class', 'timeline-spine')
+            .attr('x1', spineX)
+            .attr('y1', nodePositions[0]?.top || 40)
+            .attr('x2', spineX)
+            .attr('y2', lastPos.top + 20)
+            .attr('stroke', '#e5e7eb')
+            .attr('stroke-width', 4)
+            .attr('stroke-linecap', 'round');
+
+        // Draw node markers
+        visibleNodes.forEach((node, index) => {
+            const pos = nodePositions[index];
+            const nodeGroup = g.append('g').attr('transform', `translate(${spineX}, ${pos.top})`);
+
+            // Node circle
+            nodeGroup
+                .append('circle')
+                .attr('r', 0)
+                .attr('fill', nodeTypeColors[node.type] || '#6b7280')
+                .attr('stroke', '#ffffff')
+                .attr('stroke-width', 3)
+                .style('filter', 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1))')
+                .transition()
+                .duration(400)
+                .delay(index * 60)
+                .attr('r', node.type === 'start' || node.type === 'end' ? 10 : 14);
+
+            // Start/End icons
+            if (node.type === 'start' || node.type === 'end') {
+                nodeGroup
+                    .append('text')
+                    .attr('text-anchor', 'middle')
+                    .attr('dominant-baseline', 'central')
+                    .attr('font-size', '8px')
+                    .attr('fill', 'white')
+                    .text(node.type === 'start' ? '▶' : '■');
+            }
+
+            // Date labels (on left side)
+            if (node.display_date?.label) {
+                nodeGroup
+                    .append('text')
+                    .attr('class', 'date-label')
+                    .attr('x', -20)
+                    .attr('y', 0)
+                    .attr('text-anchor', 'end')
+                    .attr('dominant-baseline', 'central')
+                    .attr('font-size', '11px')
+                    .attr('font-weight', '500')
+                    .attr('fill', '#374151')
+                    .text(node.display_date.label);
+            }
+
+```
+
+5. 

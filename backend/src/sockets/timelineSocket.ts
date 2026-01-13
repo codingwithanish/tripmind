@@ -2,8 +2,10 @@ import { Server, Socket } from 'socket.io';
 import crypto from 'crypto';
 
 // Generate dummy timeline data with updated structure
-// - Representations are now elements inside task_node (not standalone nodes)
-// - additional_input nodes block subsequent node rendering
+// Node types: start, end, action, representation, additional_input
+// - action: contains tasks and/or recommendations arrays
+// - representation: contains single representation object (contextual info)
+// - additional_input: contains single additional_input object (blocking)
 const generateDummyTimeline = (timelineId: string) => {
     const startNodeId = crypto.randomUUID();
     const endNodeId = crypto.randomUUID();
@@ -26,33 +28,43 @@ const generateDummyTimeline = (timelineId: string) => {
                 subtype: null,
                 display_date: null,
             },
-            // Task node with representation inside (weather context)
+            // Representation node - contextual info (weather)
             {
                 id: crypto.randomUUID(),
                 node_version: 1,
                 order: 1,
-                type: 'task_node',
+                type: 'representation',
+                subtype: 'weather',
+                display_date: {
+                    type: 'date',
+                    label: 'Jan 17',
+                    start: '2026-01-17T00:00:00Z',
+                },
+                representation: {
+                    id: crypto.randomUUID(),
+                    title: 'Weather Update',
+                    description: 'Expected sunny weather with temperatures around 75°F. Perfect for outdoor activities!',
+                    image: 'https://images.unsplash.com/photo-1601297183305-6df142704ea2?w=200',
+                    icon: 'sun',
+                },
+            },
+            // Action node with tasks and recommendations
+            {
+                id: crypto.randomUUID(),
+                node_version: 1,
+                order: 2,
+                type: 'action',
                 subtype: 'default',
                 display_date: {
                     type: 'date',
                     label: 'Jan 17',
                     start: '2026-01-17T00:00:00Z',
                 },
-                // Representations now inside task nodes (shown on both sides)
-                representations: [
-                    {
-                        id: crypto.randomUUID(),
-                        title: 'Weather Update',
-                        description: 'Expected sunny weather with temperatures around 75°F. Perfect for outdoor activities!',
-                        image: 'https://images.unsplash.com/photo-1601297183305-6df142704ea2?w=200',
-                        icon: 'sun',
-                    },
-                ],
                 tasks: [
                     {
                         id: crypto.randomUUID(),
                         execution_state: 'pending',
-                        visit_status: 'no_action',
+                        visit_status: null,
                         priority: 1,
                         title: 'Book Flight Tickets',
                         title_image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=200',
@@ -97,12 +109,12 @@ const generateDummyTimeline = (timelineId: string) => {
                     },
                 ],
             },
-            // Task node with multiple tasks
+            // Action node with multiple tasks
             {
                 id: crypto.randomUUID(),
                 node_version: 1,
-                order: 2,
-                type: 'task_node',
+                order: 3,
+                type: 'action',
                 subtype: 'default',
                 display_date: {
                     type: 'date_range',
@@ -110,12 +122,11 @@ const generateDummyTimeline = (timelineId: string) => {
                     start: '2026-01-17T00:00:00Z',
                     end: '2026-01-24T00:00:00Z',
                 },
-                representations: [],
                 tasks: [
                     {
                         id: crypto.randomUUID(),
                         execution_state: 'pending',
-                        visit_status: 'no_action',
+                        visit_status: null,
                         priority: 1,
                         title: 'Book Accommodation',
                         title_image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200',
@@ -159,31 +170,14 @@ const generateDummyTimeline = (timelineId: string) => {
                     },
                 ],
             },
-            // Task node with additional input (BLOCKING - nodes after this won't render)
+            // Additional input node (BLOCKING - nodes after this won't render until answered)
             {
                 id: crypto.randomUUID(),
                 node_version: 1,
-                order: 3,
-                type: 'task_node',
-                subtype: 'additional_input',
-                display_date: {
-                    type: 'date',
-                    label: 'Jan 18',
-                    start: '2026-01-18T00:00:00Z',
-                },
-                representations: [],
-                tasks: [
-                    {
-                        id: crypto.randomUUID(),
-                        execution_state: 'pending',
-                        visit_status: 'no_action',
-                        priority: 1,
-                        title: 'Plan Day Activities',
-                        title_image: 'https://images.unsplash.com/photo-1527631746610-bca00a040d60?w=200',
-                        description: 'Choose activities for your first full day',
-                        price: null,
-                    },
-                ],
+                order: 4,
+                type: 'additional_input',
+                subtype: null,
+                display_date: null,
                 additional_input: {
                     id: crypto.randomUUID(),
                     question: 'What kind of activities do you prefer for your trip?',
@@ -191,26 +185,24 @@ const generateDummyTimeline = (timelineId: string) => {
                     placeholder: 'Type your preferences...',
                     is_required: true,
                 },
-                recommendations: [],
             },
-            // These nodes won't render until additional_input is completed
+            // Action node - tasks only (won't render until additional_input is completed)
             {
                 id: crypto.randomUUID(),
                 node_version: 1,
-                order: 4,
-                type: 'task_node',
+                order: 5,
+                type: 'action',
                 subtype: 'tasks_only',
                 display_date: {
                     type: 'time',
                     label: '2:00 PM',
                     start: '2026-01-18T14:00:00Z',
                 },
-                representations: [],
                 tasks: [
                     {
                         id: crypto.randomUUID(),
                         execution_state: 'pending',
-                        visit_status: 'no_action',
+                        visit_status: null,
                         priority: 1,
                         title: 'City Walking Tour',
                         title_image: 'https://images.unsplash.com/photo-1569959220744-ff553533f492?w=200',
@@ -222,7 +214,6 @@ const generateDummyTimeline = (timelineId: string) => {
                         },
                     },
                 ],
-                recommendations: [],
             },
             // End node
             {
