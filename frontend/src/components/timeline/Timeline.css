@@ -1,0 +1,325 @@
+/* Timeline Component Styles */
+
+/* ============= Root Container ============= */
+
+.timeline-root {
+    position: relative;
+    width: 100%;
+    min-height: 400px;
+    padding: 20px 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.timeline-root--loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ============= Loading State ============= */
+
+.timeline-loading {
+    text-align: center;
+    color: #6b7280;
+}
+
+.timeline-loading__spinner {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 12px;
+    border: 3px solid #e5e7eb;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: timeline-spin 0.8s linear infinite;
+}
+
+@keyframes timeline-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ============= Spine ============= */
+
+.timeline-spine {
+    z-index: 1;
+}
+
+/* ============= Node ============= */
+
+.timeline-node {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+}
+
+/* ============= Marker ============= */
+
+.timeline-marker {
+    z-index: 2;
+}
+
+.timeline-marker--blocking .marker-pulse {
+    animation: timeline-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes timeline-pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.3;
+    }
+
+    50% {
+        transform: scale(1.5);
+        opacity: 0.1;
+    }
+}
+
+/* ============= Connector ============= */
+
+.timeline-connector {
+    z-index: 1;
+}
+
+/* ============= Content ============= */
+
+.timeline-content {
+    z-index: 3;
+}
+
+.timeline-content--visible {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+}
+
+/* ============= Slots ============= */
+
+.timeline-slot {
+    width: 100%;
+}
+
+.timeline-slot--blocking {
+    position: relative;
+}
+
+.timeline-slot--blocking::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border: 2px solid #f59e0b;
+    border-radius: 12px;
+    animation: timeline-glow 1.5s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes timeline-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 16px rgba(245, 158, 11, 0.6);
+    }
+}
+
+/* ============= Cards ============= */
+
+.timeline-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e5e7eb;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.timeline-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    transform: translateY(-1px);
+}
+
+.timeline-card--start,
+.timeline-card--end {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+}
+
+.timeline-card--start {
+    border-left: 3px solid #10b981;
+}
+
+.timeline-card--end {
+    border-left: 3px solid #ef4444;
+}
+
+.timeline-card__date {
+    font-weight: 600;
+    color: #374151;
+    font-size: 13px;
+}
+
+.timeline-card__label {
+    color: #6b7280;
+    font-size: 12px;
+}
+
+/* ============= Input Card ============= */
+
+.timeline-card--input {
+    border-left: 3px solid #f59e0b;
+}
+
+.timeline-card__icon {
+    font-size: 20px;
+    margin-bottom: 8px;
+}
+
+.timeline-card__question {
+    font-weight: 500;
+    color: #374151;
+    margin: 0 0 12px;
+    line-height: 1.4;
+}
+
+.timeline-card__input-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #f59e0b;
+    font-weight: 500;
+}
+
+/* ============= Representation Card ============= */
+
+.timeline-card--representation {
+    overflow: hidden;
+}
+
+.timeline-card__image {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px 8px 0 0;
+    margin: -16px -16px 12px;
+    width: calc(100% + 32px);
+}
+
+.timeline-card__body {
+    padding: 0;
+}
+
+.timeline-card__title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 6px;
+}
+
+.timeline-card__description {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* ============= Action Card ============= */
+
+.timeline-card--action {
+    border-left: 3px solid #3b82f6;
+}
+
+.timeline-card__tasks {
+    margin-top: 12px;
+}
+
+.timeline-card__task-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.timeline-card__task-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.timeline-card__task-status {
+    font-size: 14px;
+}
+
+.timeline-card__task-title {
+    font-size: 13px;
+    color: #374151;
+}
+
+/* ============= View Mode Toggle ============= */
+
+.timeline-view-toggle {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 16px;
+}
+
+.timeline-view-toggle__btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #6b7280;
+    background: transparent;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.timeline-view-toggle__btn:first-child {
+    border-radius: 6px 0 0 6px;
+}
+
+.timeline-view-toggle__btn:last-child {
+    border-radius: 0 6px 6px 0;
+    margin-left: -1px;
+}
+
+.timeline-view-toggle__btn--active {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.timeline-view-toggle__btn:not(.timeline-view-toggle__btn--active):hover {
+    background: #f9fafb;
+}
+
+/* ============= Responsive ============= */
+
+@media (max-width: 768px) {
+    .timeline-card {
+        padding: 12px;
+    }
+
+    .timeline-card__image {
+        height: 80px;
+        margin: -12px -12px 10px;
+        width: calc(100% + 24px);
+    }
+}

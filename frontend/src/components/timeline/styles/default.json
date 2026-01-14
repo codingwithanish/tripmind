@@ -1,0 +1,49 @@
+{
+    "spine": {
+        "x": 40,
+        "strokeWidth": 2,
+        "strokeColor": "#e5e7eb",
+        "strokeLinecap": "round"
+    },
+    "node": {
+        "size": {
+            "start": 10,
+            "end": 10,
+            "default": 14
+        },
+        "colors": {
+            "start": "#10b981",
+            "end": "#ef4444",
+            "task_node": "#3b82f6",
+            "representation_node": "#8b5cf6"
+        },
+        "strokeWidth": 3,
+        "strokeColor": "#ffffff",
+        "shadow": "0 2px 4px rgba(0, 0, 0, 0.1)"
+    },
+    "card": {
+        "height": 100,
+        "spacing": 12,
+        "dateCardGap": 16,
+        "width": 280
+    },
+    "connector": {
+        "strokeWidth": 2,
+        "color": "#3b82f6",
+        "opacity": 0.6,
+        "arrowSize": 8
+    },
+    "animation": {
+        "nodeDelay": 60,
+        "cardDelay": 30,
+        "duration": 400,
+        "easing": "easeOutCubic"
+    },
+    "spacing": {
+        "minNodeGap": 30,
+        "topOffset": 40,
+        "dateBadgeDistance": 20,
+        "dateBadgeWidth": 100,
+        "cardDistance": 240
+    }
+}

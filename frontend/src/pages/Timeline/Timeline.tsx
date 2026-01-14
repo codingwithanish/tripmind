@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
-import TimelineContainer from '@components/timeline/TimelineContainer';
+import { TimelineRenderer } from '@components/timeline';
 import TimelineChat from '@components/timeline/TimelineChat';
 import timelineWebSocket from '@services/timelineWebSocket';
 import { TimelineData, CompleteTimelineEvent } from '../../types/websocket.types';
@@ -204,13 +204,18 @@ const Timeline: React.FC = () => {
                 <div className="timeline-page__content">
                     {activeTab === 'timeline' && (
                         <div className="timeline-page__panel">
-                            <TimelineContainer
-                                timeline={timeline}
-                                isLoading={!isConnected}
-                                onTaskComplete={handleTaskComplete}
-                                onTaskSkip={handleTaskSkip}
-                                onAdditionalInput={handleAdditionalInput}
-                            />
+                            {timeline ? (
+                                <TimelineRenderer
+                                    data={timeline}
+                                    onTaskComplete={handleTaskComplete}
+                                    onAdditionalInput={handleAdditionalInput}
+                                />
+                            ) : (
+                                <div className="timeline-loading">
+                                    <div className="timeline-loading__spinner" />
+                                    <p>Loading timeline...</p>
+                                </div>
+                            )}
                         </div>
                     )}
                     {activeTab === 'chat' && (
@@ -259,13 +264,18 @@ const Timeline: React.FC = () => {
                             </span>
                         )}
                     </div>
-                    <TimelineContainer
-                        timeline={timeline}
-                        isLoading={!isConnected}
-                        onTaskComplete={handleTaskComplete}
-                        onTaskSkip={handleTaskSkip}
-                        onAdditionalInput={handleAdditionalInput}
-                    />
+                    {timeline ? (
+                        <TimelineRenderer
+                            data={timeline}
+                            onTaskComplete={handleTaskComplete}
+                            onAdditionalInput={handleAdditionalInput}
+                        />
+                    ) : (
+                        <div className="timeline-loading">
+                            <div className="timeline-loading__spinner" />
+                            <p>Loading timeline...</p>
+                        </div>
+                    )}
                 </div>
                 <div className="timeline-page__right">
                     <TimelineChat

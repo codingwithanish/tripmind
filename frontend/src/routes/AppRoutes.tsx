@@ -4,6 +4,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import Home from '@pages/Home';
 import Chat from '@pages/Chat';
 import Timeline from '@pages/Timeline';
+import TimelineTest from '@pages/TimelineTest';
 import { ROUTES } from '@utils/constants';
 
 // Placeholder components (to be implemented later)
@@ -19,6 +20,7 @@ const AppRoutes: React.FC = () => {
         <Route path={ROUTES.HOME} element={<Home />} />
         <Route path={ROUTES.CHAT} element={<Chat />} />
         <Route path={ROUTES.TIMELINE} element={<Timeline />} />
+        <Route path="/timeline-test" element={<TimelineTest />} />
         <Route path={ROUTES.MY_TRAVELS} element={<MyTravels />} />
         <Route path={ROUTES.NOTIFICATIONS} element={<Notifications />} />
         <Route path={ROUTES.LOGIN} element={<Login />} />
