@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timeline - Consolidated Card Model</title>
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #f5f5f0;
+            font-family: 'IBM Plex Sans', sans-serif;
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: #333;
+        }
+
+        .timeline-container {
+            max-width: 520px;
+            margin: 0 auto;
+            position: relative;
+            padding-left: 70px;
+        }
+
+        /* Vertical connector line from node to next node */
+        .node-vertical-connector {
+            position: absolute;
+            left: -36px;
+            /* Centered under 36px circle: -52px + 18px(half) - 2px(half of 4px width) = -36px */
+            width: 4px;
+            border-radius: 2px;
+            z-index: 1;
+        }
+
+        /* Color variants for vertical connectors */
+        .node-vertical-connector.action {
+            background: #7bc47f;
+        }
+
+        .node-vertical-connector.severity-low {
+            background: #64b5f6;
+        }
+
+        .node-vertical-connector.severity-medium {
+            background: #ffd54f;
+        }
+
+        .node-vertical-connector.severity-high {
+            background: #ef5350;
+        }
+
+        /* Node wrapper */
+        .timeline-node {
+            position: relative;
+            /* Margin set dynamically based on calculations */
+        }
+
+        /* Node circle on spine - absolutely positioned (reduced by 25%: 48px -> 36px) */
+        .node-circle {
+            position: absolute;
+            left: -52px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            background: #fff;
+        }
+
+        .node-circle.action {
+            background: #7bc47f;
+            border: 3px solid #5ba85f;
+        }
+
+        .node-circle.representation {
+            background: #fff;
+            border: 3px solid #64b5f6;
+        }
+
+        .node-circle.representation.severity-low {
+            background: #e3f2fd;
+            border-color: #64b5f6;
+        }
+
+        .node-circle.representation.severity-medium {
+            background: #fff8e1;
+            border-color: #ffd54f;
+        }
+
+        .node-circle.representation.severity-high {
+            background: #ffebee;
+            border-color: #ef5350;
+        }
+
+        .node-circle iconify-icon {
+            font-size: 18px;
+        }
+
+        .node-circle.action iconify-icon {
+            color: #fff;
+        }
+
+        .node-circle.representation.severity-low iconify-icon {
+            color: #1976d2;
+        }
+
+        .node-circle.representation.severity-medium iconify-icon {
+            color: #f57c00;
+        }
+
+        .node-circle.representation.severity-high iconify-icon {
+            color: #d32f2f;
+        }
+
+        /* Horizontal connector line from circle to card */
+        .node-connector {
+            position: absolute;
+            left: -16px;
+            /* Circle right edge: -52px + 36px = -16px */
+            width: 16px;
+            /* From circle edge to card edge */
+            height: 3px;
+            /* Top position set dynamically in JS to center on circle */
+        }
+
+        .node-connector.action {
+            background: #7bc47f;
+        }
+
+        .node-connector.severity-low {
+            background: #64b5f6;
+        }
+
+        .node-connector.severity-medium {
+            background: #ffd54f;
+        }
+
+        .node-connector.severity-high {
+            background: #ef5350;
+        }
+
+        /* Card wrapper */
+        .card-wrapper {
+            position: relative;
+        }
+
+        /* ==================== ACTION NODE CARD ==================== */
+        .action-card-container {
+            perspective: 1200px;
+        }
+
+        .action-card-flipper {
+            position: relative;
+            width: 100%;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .action-card-flipper.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .action-card-front,
+        .action-card-back {
+            width: 100%;
+            backface-visibility: hidden;
+            border-radius: 16px;
+            background: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .action-card-back {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform: rotateY(180deg);
+        }
+
+        /* Card Header */
+        .card-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        .header-icon {
+            width: 44px;
+            height: 44px;
+            background: #7bc47f;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .header-icon iconify-icon {
+            font-size: 24px;
+            color: #fff;
+        }
+
+        .header-icon.back-button {
+            background: #e8e8e8;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .header-icon.back-button:hover {
+            background: #d0d0d0;
+        }
+
+        .header-icon.back-button iconify-icon {
+            color: #666;
+        }
+
+        .header-content {
+            flex: 1;
+        }
+
+        .header-date {
+            font-size: 13px;
+            color: #7bc47f;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .header-title {
+            font-size: 15px;
+            color: #333;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        /* Card Body */
+        .card-body {
+            padding: 16px 20px;
+        }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        /* Task/Recommendation Cards */
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .task-item {
+            background: #f8faf8;
+            border: 1.5px dashed #b8d4b8;
+            border-radius: 12px;
+            padding: 14px 16px;
+        }
+
+        .task-item-top {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .task-icon {
+            width: 36px;
+            height: 36px;
+            background: #e8f5e9;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .task-icon iconify-icon {
+            font-size: 20px;
+            color: #5ba85f;
+        }
+
+        .task-content {
+            flex: 1;
+        }
+
+        .task-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            line-height: 1.4;
+            margin-bottom: 3px;
+        }
+
+        .task-subtitle {
+            font-size: 12px;
+            color: #888;
+            font-style: italic;
+        }
+
+        .task-item-bottom {
+            padding-top: 10px;
+            border-top: 1px solid #e0e8e0;
+        }
+
+        .task-price {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .task-price.confirmed {
+            color: #4caf50;
+        }
+
+        .task-price.not-confirmed {
+            color: #ff9800;
+        }
+
+        /* Card Footer */
+        .card-footer {
+            padding: 16px 20px;
+            border-top: 1px dashed #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .footer-btn {
+            width: 100%;
+            padding: 14px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-btn.primary {
+            background: #e8f5e9;
+            border: 2px dashed #7bc47f;
+            color: #5ba85f;
+        }
+
+        .footer-btn.primary:hover {
+            background: #d4edda;
+            border-style: solid;
+        }
+
+        .footer-btn.secondary {
+            background: #e8f5e9;
+            border: 2px solid #7bc47f;
+            color: #5ba85f;
+        }
+
+        .footer-btn.secondary:hover {
+            background: #7bc47f;
+            color: #fff;
+        }
+
+        /* ==================== REPRESENTATION NODE CARD ==================== */
+        .representation-card {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+        }
+
+        .representation-card.severity-low {
+            border-left: 4px solid #64b5f6;
+            background: linear-gradient(135deg, #e3f2fd 0%, #fff 100%);
+        }
+
+        .representation-card.severity-medium {
+            border-left: 4px solid #ffd54f;
+            background: linear-gradient(135deg, #fff8e1 0%, #fff 100%);
+        }
+
+        .representation-card.severity-high {
+            border-left: 4px solid #ef5350;
+            background: linear-gradient(135deg, #ffebee 0%, #fff 100%);
+        }
+
+        .representation-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .severity-low .representation-icon {
+            background: #bbdefb;
+        }
+
+        .severity-low .representation-icon iconify-icon {
+            color: #1976d2;
+        }
+
+        .severity-medium .representation-icon {
+            background: #ffe082;
+        }
+
+        .severity-medium .representation-icon iconify-icon {
+            color: #f57c00;
+        }
+
+        .severity-high .representation-icon {
+            background: #ffcdd2;
+        }
+
+        .severity-high .representation-icon iconify-icon {
+            color: #d32f2f;
+        }
+
+        .representation-icon iconify-icon {
+            font-size: 26px;
+        }
+
+        .representation-content {
+            flex: 1;
+        }
+
+        .representation-title {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .severity-low .representation-title {
+            color: #1565c0;
+        }
+
+        .severity-medium .representation-title {
+            color: #e65100;
+        }
+
+        .severity-high .representation-title {
+            color: #c62828;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="timeline-container" id="timeline">
+        <!-- Timeline will be rendered here -->
+    </div>
+
+    <script>
+        // ============================================================
+        // CONFIGURATION
+        // ============================================================
+        const TimelineConfig = {
+            // Spacing configuration (updated for 36px circles)
+            spacing: {
+                nodeBuffer: 40,           // Buffer space between nodes
+                headerHeight: 76,         // Approximate header height
+                taskItemHeight: 95,       // Approximate height per task item
+                footerHeight: 120,        // Footer with 2 buttons
+                representationHeight: 90, // Representation card height
+                circleOffset: 18          // Circle vertical offset (half of 36px)
+            },
+
+            // Price status colors
+            priceColors: {
+                'confirmed': '#4caf50',
+                'not-confirmed': '#ff9800'
+            },
+
+            // Auto-flip timer (ms)
+            autoFlipDelay: 10000,
+
+            // Default icons
+            defaultIcons: {
+                action: 'mdi:airplane',
+                representation: 'mdi:alert-circle',
+                back: 'mdi:chevron-left'
+            }
+        };
+
+        // ============================================================
+        // DATA
+        // ============================================================
+        const timelineData = {
+            nodes: [
+                {
+                    "order": 1,
+                    "type": "action",
+                    "id": "node-001",
+                    "node_details": {
+                        "date_info": {
+                            "icon": "mdi:calendar",
+                            "text": "Jan 12, 12:30 PM → Jan 16, 1:30 AM"
+                        },
+                        "node_info": {
+                            "icon": "mdi:airplane",
+                            "text": "Flight from Kochi to Sydney via Mumbai with IndiGo Airlines."
+                        }
+                    },
+                    "tasks": [
+                        {
+                            "id": "task-001",
+                            "description_summary": {
+                                "icon": "mdi:airplane-takeoff",
+                                "title": "Book your flight from COK to SYD, departing on 23 Jan",
+                                "sub_title": "IndiGo 6E-2034, Departure 6:00 AM"
+                            },
+                            "price": {
+                                "label": "approx cost",
+                                "value": "45,000-52,000",
+                                "unit": "INR",
+                                "status": "confirmed"
+                            }
+                        },
+                        {
+                            "id": "task-002",
+                            "description_summary": {
+                                "icon": "mdi:bed",
+                                "title": "Book hotel accommodation at Sydney Harbour for 4 nights",
+                                "sub_title": "Sydney Harbour Marriott, Check-in: Jan 24"
+                            },
+                            "price": {
+                                "label": "approx cost",
+                                "value": "45,000-52,000",
+                                "unit": "INR",
+                                "status": "not-confirmed"
+                            }
+                        }
+                    ],
+                    "recommendations": [
+                        {
+                            "id": "rec-001",
+                            "description_summary": {
+                                "icon": "mdi:camera",
+                                "title": "Visit Sydney Opera House for a guided tour",
+                                "sub_title": "Tours run hourly, advance booking recommended"
+                            },
+                            "price": {
+                                "label": "ticket price",
+                                "value": "42",
+                                "unit": "AUD",
+                                "status": "confirmed"
+                            }
+                        },
+                        {
+                            "id": "rec-002",
+                            "description_summary": {
+                                "icon": "mdi:food",
+                                "title": "Try the famous Sydney Fish Market",
+                                "sub_title": "Open daily 7AM-4PM, Pyrmont area"
+                            },
+                            "price": {
+                                "label": "budget",
+                                "value": "50-100",
+                                "unit": "AUD",
+                                "status": "not-confirmed"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "order": 2,
+                    "type": "representation",
+                    "id": "rep-001",
+                    "description_summary": {
+                        "node_icon": "mdi:weather-sunny",
+                        "icon": "mdi:weather-sunny",
+                        "title": "Last year, the temperature at this time dropped to around –1°C, so please be prepared with warm clothing."
+                    },
+                    "severity": "low"
+                },
+                {
+                    "order": 3,
+                    "type": "action",
+                    "id": "node-002",
+                    "node_details": {
+                        "date_info": {
+                            "icon": "mdi:calendar",
+                            "text": "Jan 17, 9:00 AM → Jan 17, 6:00 PM"
+                        },
+                        "node_info": {
+                            "icon": "mdi:car",
+                            "text": "Road trip to the Blue Mountains with scenic stops along the way."
+                        }
+                    },
+                    "tasks": [
+                        {
+                            "id": "task-003",
+                            "description_summary": {
+                                "icon": "mdi:car-side",
+                                "title": "Rent a car for Blue Mountains day trip",
+                                "sub_title": "Pick up from Sydney CBD, return same day"
+                            },
+                            "price": {
+                                "label": "rental cost",
+                                "value": "120-180",
+                                "unit": "AUD",
+                                "status": "not-confirmed"
+                            }
+                        }
+                    ],
+                    "recommendations": [
+                        {
+                            "id": "rec-003",
+                            "description_summary": {
+                                "icon": "mdi:binoculars",
+                                "title": "Visit Three Sisters lookout point",
+                                "sub_title": "Best views in early morning"
+                            },
+                            "price": {
+                                "label": "entry",
+                                "value": "Free",
+                                "unit": "",
+                                "status": "confirmed"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "order": 4,
+                    "type": "representation",
+                    "id": "rep-002",
+                    "description_summary": {
+                        "node_icon": "mdi:traffic-light",
+                        "icon": "mdi:alert",
+                        "title": "Traffic congestion expected on Highway 101. Consider alternative routes or adjust departure time."
+                    },
+                    "severity": "medium"
+                },
+                {
+                    "order": 5,
+                    "type": "representation",
+                    "id": "rep-003",
+                    "description_summary": {
+                        "node_icon": "mdi:passport",
+                        "icon": "mdi:alert-octagon",
+                        "title": "Important: Passport renewal required before Jan 20. Visit the nearest embassy immediately to avoid travel disruption."
+                    },
+                    "severity": "high"
+                }
+            ]
+        };
+
+        // ============================================================
+        // TIMELINE RENDERER
+        // ============================================================
+        const TimelineRenderer = {
+            autoFlipTimers: {},
+            nodeHeights: [],
+
+            // Calculate card height based on content
+            calculateActionCardHeight(node) {
+                const config = TimelineConfig.spacing;
+                const taskCount = (node.tasks || []).length;
+
+                // Header + Body (section label + tasks) + Footer
+                const bodyHeight = 40 + (taskCount * config.taskItemHeight) + (taskCount > 0 ? 12 * (taskCount - 1) : 0);
+                const totalHeight = config.headerHeight + bodyHeight + config.footerHeight;
+
+                return Math.max(totalHeight, 200); // Minimum height
+            },
+
+            calculateRepresentationCardHeight(node) {
+                return TimelineConfig.spacing.representationHeight;
+            },
+
+            init(containerId, data) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+
+                container.innerHTML = '';
+
+                // Sort nodes by order
+                const sortedNodes = [...data.nodes].sort((a, b) => a.order - b.order);
+
+                // First pass: calculate all heights
+                this.nodeHeights = sortedNodes.map(node => {
+                    if (node.type === 'action') {
+                        return this.calculateActionCardHeight(node);
+                    } else {
+                        return this.calculateRepresentationCardHeight(node);
+                    }
+                });
+
+                // Second pass: render nodes with connector info
+                let currentTop = 0;
+
+                sortedNodes.forEach((node, index) => {
+                    const isFirst = index === 0;
+                    const isLast = index === sortedNodes.length - 1;
+                    const currentHeight = this.nodeHeights[index];
+
+                    const nodeElement = node.type === 'action'
+                        ? this.renderActionNode(node, currentTop, isFirst, isLast, currentHeight)
+                        : this.renderRepresentationNode(node, currentTop, isFirst, isLast, currentHeight);
+
+                    container.appendChild(nodeElement);
+
+                    // Move to next position
+                    currentTop += currentHeight + TimelineConfig.spacing.nodeBuffer;
+                });
+            },
+
+            renderActionNode(node, topPosition, isFirst, isLast, currentHeight) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'timeline-node';
+                wrapper.dataset.nodeId = node.id;
+                wrapper.style.marginBottom = TimelineConfig.spacing.nodeBuffer + 'px';
+
+                const nodeIcon = node.node_details?.node_info?.icon || TimelineConfig.defaultIcons.action;
+                const circleTop = TimelineConfig.spacing.circleOffset;
+                const circleSize = 36; // Current circle size
+                const lineHeight = 3; // Horizontal connector height
+
+                // Horizontal connector: vertically centered on circle
+                const horizontalConnectorTop = circleTop + (circleSize / 2) - (lineHeight / 2);
+
+                // Vertical connector: from center of circle down to next node
+                // Starts at circle center and uses calc() for dynamic height based on actual rendered content
+                const verticalConnectorTop = circleTop + (circleSize / 2); // Start from circle center
+                const buffer = TimelineConfig.spacing.nodeBuffer;
+
+                // Only show vertical connector if not the last node
+                const verticalConnector = isLast ? '' : `
+                    <div class="node-vertical-connector action" style="top: ${verticalConnectorTop}px; height: calc(100% - ${verticalConnectorTop}px + ${buffer}px);"></div>
+                `;
+
+                wrapper.innerHTML = `
+                    <div class="node-circle action" style="top: ${circleTop}px;">
+                        <iconify-icon icon="${nodeIcon}"></iconify-icon>
+                    </div>
+                    <div class="node-connector action" style="top: ${horizontalConnectorTop}px;"></div>
+                    ${verticalConnector}
+                    <div class="card-wrapper">
+                        <div class="action-card-container">
+                            <div class="action-card-flipper" id="flipper-${node.id}">
+                                ${this.renderActionFront(node)}
+                                ${this.renderActionBack(node)}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                return wrapper;
+            },
+
+            renderActionFront(node) {
+                const details = node.node_details || {};
+                const dateText = details.date_info?.text || '';
+                const infoText = details.node_info?.text || '';
+                const infoIcon = details.node_info?.icon || TimelineConfig.defaultIcons.action;
+
+                return `
+                    <div class="action-card-front">
+                        <div class="card-header">
+                            <div class="header-icon">
+                                <iconify-icon icon="${infoIcon}"></iconify-icon>
+                            </div>
+                            <div class="header-content">
+                                <div class="header-date">${dateText}</div>
+                                <div class="header-title">${infoText}</div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="section-label">Actions</div>
+                            <div class="task-list">
+                                ${this.renderTaskItems(node.tasks || [])}
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="footer-btn primary" 
+                                    onclick="TimelineRenderer.flipCard('${node.id}')">
+                                Show More Recommendations
+                            </button>
+                            <button class="footer-btn secondary" 
+                                    onclick="TimelineRenderer.openHelp('${node.id}')">
+                                I Need Some Help Here
+                            </button>
+                        </div>
+                    </div>
+                `;
+            },
+
+            renderActionBack(node) {
+                const details = node.node_details || {};
+                const dateText = details.date_info?.text || '';
+                const infoText = details.node_info?.text || '';
+
+                const recommendations = node.recommendations || [];
+                const hasRecommendations = recommendations.length > 0;
+
+                return `
+                    <div class="action-card-back">
+                        <div class="card-header">
+                            <div class="header-icon back-button" onclick="TimelineRenderer.flipCard('${node.id}')">
+                                <iconify-icon icon="${TimelineConfig.defaultIcons.back}"></iconify-icon>
+                            </div>
+                            <div class="header-content">
+                                <div class="header-date">${dateText}</div>
+                                <div class="header-title">${infoText}</div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="section-label">Our Recommendations</div>
+                            <div class="task-list">
+                                ${hasRecommendations
+                        ? this.renderTaskItems(recommendations)
+                        : '<div style="color: #999; font-size: 13px; padding: 20px 0; text-align: center;">No recommendations available for this action.</div>'
+                    }
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="footer-btn secondary" 
+                                    onclick="TimelineRenderer.openHelp('${node.id}')">
+                                I Need Some Help Here
+                            </button>
+                        </div>
+                    </div>
+                `;
+            },
+
+            renderTaskItems(items) {
+                if (!items || items.length === 0) {
+                    return '<div style="color: #999; font-size: 13px; padding: 10px 0;">No items available</div>';
+                }
+
+                return items.map(item => {
+                    const desc = item.description_summary || {};
+                    const price = item.price || {};
+                    const priceStatus = price.status || 'not-confirmed';
+                    const priceText = price.value ? `${price.label}: ${price.value} ${price.unit}` : '';
+
+                    return `
+                        <div class="task-item" data-task-id="${item.id}">
+                            <div class="task-item-top">
+                                <div class="task-icon">
+                                    <iconify-icon icon="${desc.icon || 'mdi:checkbox-marked-circle'}"></iconify-icon>
+                                </div>
+                                <div class="task-content">
+                                    <div class="task-title">${desc.title || ''}</div>
+                                    <div class="task-subtitle">${desc.sub_title || ''}</div>
+                                </div>
+                            </div>
+                            ${priceText ? `
+                                <div class="task-item-bottom">
+                                    <div class="task-price ${priceStatus}">${priceText}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            renderRepresentationNode(node, topPosition, isFirst, isLast, currentHeight) {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'timeline-node';
+                wrapper.dataset.nodeId = node.id;
+                wrapper.style.marginBottom = TimelineConfig.spacing.nodeBuffer + 'px';
+
+                const severity = node.severity || 'low';
+                const desc = node.description_summary || {};
+                const nodeIcon = desc.node_icon || desc.icon || TimelineConfig.defaultIcons.representation;
+                const cardIcon = desc.icon || TimelineConfig.defaultIcons.representation;
+
+                // Center the circle vertically with the card (36px circle)
+                const cardHeight = TimelineConfig.spacing.representationHeight;
+                const circleSize = 36;
+                const lineHeight = 3;
+                const circleTop = (cardHeight / 2) - (circleSize / 2); // Center circle vertically
+
+                // Horizontal connector: vertically centered on circle
+                const horizontalConnectorTop = circleTop + (circleSize / 2) - (lineHeight / 2);
+
+                // Vertical connector: from center of circle down to next node
+                const verticalConnectorTop = circleTop + (circleSize / 2); // Start from circle center
+                const buffer = TimelineConfig.spacing.nodeBuffer;
+
+                // Only show vertical connector if not the last node
+                const verticalConnector = isLast ? '' : `
+                    <div class="node-vertical-connector severity-${severity}" style="top: ${verticalConnectorTop}px; height: calc(100% - ${verticalConnectorTop}px + ${buffer}px);"></div>
+                `;
+
+                wrapper.innerHTML = `
+                    <div class="node-circle representation severity-${severity}" style="top: ${circleTop}px;">
+                        <iconify-icon icon="${nodeIcon}"></iconify-icon>
+                    </div>
+                    <div class="node-connector severity-${severity}" style="top: ${horizontalConnectorTop}px;"></div>
+                    ${verticalConnector}
+                    <div class="card-wrapper">
+                        <div class="representation-card severity-${severity}">
+                            <div class="representation-icon">
+                                <iconify-icon icon="${cardIcon}"></iconify-icon>
+                            </div>
+                            <div class="representation-content">
+                                <div class="representation-title">${desc.title || ''}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                return wrapper;
+            },
+
+            flipCard(nodeId) {
+                const flipper = document.getElementById(`flipper-${nodeId}`);
+                if (!flipper) return;
+
+                const isFlipped = flipper.classList.contains('flipped');
+
+                if (isFlipped) {
+                    // Flipping back to front
+                    flipper.classList.remove('flipped');
+                    this.clearAutoFlipTimer(nodeId);
+                } else {
+                    // Flipping to back (recommendations)
+                    flipper.classList.add('flipped');
+                    this.startAutoFlipTimer(nodeId);
+                }
+            },
+
+            startAutoFlipTimer(nodeId) {
+                this.clearAutoFlipTimer(nodeId);
+
+                this.autoFlipTimers[nodeId] = setTimeout(() => {
+                    const flipper = document.getElementById(`flipper-${nodeId}`);
+                    if (flipper && flipper.classList.contains('flipped')) {
+                        flipper.classList.remove('flipped');
+                    }
+                }, TimelineConfig.autoFlipDelay);
+
+                // Reset timer on interaction
+                const flipper = document.getElementById(`flipper-${nodeId}`);
+                if (flipper) {
+                    const resetTimer = () => {
+                        if (flipper.classList.contains('flipped')) {
+                            this.startAutoFlipTimer(nodeId);
+                        }
+                    };
+
+                    flipper.addEventListener('mousemove', resetTimer, { once: true });
+                    flipper.addEventListener('click', resetTimer, { once: true });
+                }
+            },
+
+            clearAutoFlipTimer(nodeId) {
+                if (this.autoFlipTimers[nodeId]) {
+                    clearTimeout(this.autoFlipTimers[nodeId]);
+                    delete this.autoFlipTimers[nodeId];
+                }
+            },
+
+            openHelp(nodeId) {
+                console.log(`Opening help for node: ${nodeId}`);
+                alert(`Help requested for node: ${nodeId}\n\nThis would open the chat interface contextually linked to this task.`);
+            }
+        };
+
+        // Initialize timeline
+        document.addEventListener('DOMContentLoaded', () => {
+            TimelineRenderer.init('timeline', timelineData);
+        });
+    </script>
+</body>
+
+</html>
