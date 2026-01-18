@@ -1,7 +1,7 @@
 // Timeline Test Page - For verifying the new compound component system
 
 import { TimelineRenderer } from '../components/timeline';
-import type { TimelineData } from '../components/timeline';
+import type { TimelineData } from '../types/websocket.types';
 
 // Mock timeline data for testing
 const mockTimelineData: TimelineData = {
@@ -133,14 +133,9 @@ const mockTimelineData: TimelineData = {
 };
 
 export default function TimelineTest() {
-    const handleTaskComplete = (taskId: string, nodeId: string) => {
-        console.log('Task completed:', taskId, 'in node:', nodeId);
-        alert(`Task ${taskId} marked as complete!`);
-    };
-
-    const handleAdditionalInput = (nodeId: string, value: string) => {
-        console.log('Additional input received:', value, 'for node:', nodeId);
-        alert(`Input received: ${value}`);
+    const handleHelpRequest = (nodeId: string) => {
+        console.log('Help requested for node:', nodeId);
+        alert(`Help requested for node: ${nodeId}`);
     };
 
     return (
@@ -165,9 +160,7 @@ export default function TimelineTest() {
             }}>
                 <TimelineRenderer
                     data={mockTimelineData}
-                    style="default"
-                    onTaskComplete={handleTaskComplete}
-                    onAdditionalInput={handleAdditionalInput}
+                    onHelpRequest={handleHelpRequest}
                 />
             </div>
 

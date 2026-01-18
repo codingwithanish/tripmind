@@ -1,35 +1,33 @@
-/* Timeline Component Styles */
+/* Timeline V2 Styles */
+/* Based on timeline-v2.html consolidated card model */
 
-/* ============= Root Container ============= */
+/* ============================================================
+   BASE & CONTAINER
+   ============================================================ */
 
-.timeline-root {
+.timeline-container {
+    max-width: 520px;
+    margin: 0 auto;
     position: relative;
-    width: 100%;
-    min-height: 400px;
-    padding: 20px 0;
-    overflow-x: hidden;
-    overflow-y: auto;
+    padding-left: 70px;
+    padding-top: 20px;
+    padding-bottom: 40px;
 }
-
-.timeline-root--loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* ============= Loading State ============= */
 
 .timeline-loading {
-    text-align: center;
-    color: #6b7280;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    color: #888;
 }
 
 .timeline-loading__spinner {
-    width: 40px;
-    height: 40px;
-    margin: 0 auto 12px;
-    border: 3px solid #e5e7eb;
-    border-top-color: #3b82f6;
+    width: 32px;
+    height: 32px;
+    border: 3px solid #e0e0e0;
+    border-top-color: #7bc47f;
     border-radius: 50%;
     animation: timeline-spin 0.8s linear infinite;
 }
@@ -40,286 +38,513 @@
     }
 }
 
-/* ============= Spine ============= */
-
-.timeline-spine {
-    z-index: 1;
-}
-
-/* ============= Node ============= */
+/* ============================================================
+   NODE STRUCTURE
+   ============================================================ */
 
 .timeline-node {
-    display: flex;
-    align-items: center;
-    min-height: 40px;
-}
-
-/* ============= Marker ============= */
-
-.timeline-marker {
-    z-index: 2;
-}
-
-.timeline-marker--blocking .marker-pulse {
-    animation: timeline-pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes timeline-pulse {
-
-    0%,
-    100% {
-        transform: scale(1);
-        opacity: 0.3;
-    }
-
-    50% {
-        transform: scale(1.5);
-        opacity: 0.1;
-    }
-}
-
-/* ============= Connector ============= */
-
-.timeline-connector {
-    z-index: 1;
-}
-
-/* ============= Content ============= */
-
-.timeline-content {
-    z-index: 3;
-}
-
-.timeline-content--visible {
-    opacity: 1;
-    transform: translateY(-50%) translateX(0);
-}
-
-/* ============= Slots ============= */
-
-.timeline-slot {
-    width: 100%;
-}
-
-.timeline-slot--blocking {
     position: relative;
 }
 
-.timeline-slot--blocking::after {
-    content: '';
+/* ============================================================
+   NODE CIRCLE (on spine)
+   ============================================================ */
+
+.node-circle {
     position: absolute;
-    inset: -4px;
-    border: 2px solid #f59e0b;
-    border-radius: 12px;
-    animation: timeline-glow 1.5s ease-in-out infinite;
-    pointer-events: none;
-}
-
-@keyframes timeline-glow {
-
-    0%,
-    100% {
-        box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
-    }
-
-    50% {
-        box-shadow: 0 0 16px rgba(245, 158, 11, 0.6);
-    }
-}
-
-/* ============= Cards ============= */
-
-.timeline-card {
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border: 1px solid #e5e7eb;
-    transition: box-shadow 0.2s, transform 0.2s;
-}
-
-.timeline-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-    transform: translateY(-1px);
-}
-
-.timeline-card--start,
-.timeline-card--end {
+    left: -52px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 12px 16px;
+    justify-content: center;
+    z-index: 2;
+    background: #fff;
 }
 
-.timeline-card--start {
-    border-left: 3px solid #10b981;
+.node-circle--action {
+    background: #7bc47f;
+    border: 3px solid #5ba85f;
 }
 
-.timeline-card--end {
-    border-left: 3px solid #ef4444;
+.node-circle--representation {
+    background: #fff;
+    border: 3px solid #64b5f6;
 }
 
-.timeline-card__date {
-    font-weight: 600;
-    color: #374151;
-    font-size: 13px;
+.node-circle--representation.severity-low {
+    background: #e3f2fd;
+    border-color: #64b5f6;
 }
 
-.timeline-card__label {
-    color: #6b7280;
-    font-size: 12px;
+.node-circle--representation.severity-medium {
+    background: #fff8e1;
+    border-color: #ffd54f;
 }
 
-/* ============= Input Card ============= */
-
-.timeline-card--input {
-    border-left: 3px solid #f59e0b;
+.node-circle--representation.severity-high {
+    background: #ffebee;
+    border-color: #ef5350;
 }
 
-.timeline-card__icon {
-    font-size: 20px;
-    margin-bottom: 8px;
+.node-circle iconify-icon {
+    font-size: 18px;
 }
 
-.timeline-card__question {
-    font-weight: 500;
-    color: #374151;
-    margin: 0 0 12px;
-    line-height: 1.4;
+.node-circle--action iconify-icon {
+    color: #fff;
 }
 
-.timeline-card__input-hint {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: #f59e0b;
-    font-weight: 500;
+.node-circle--representation.severity-low iconify-icon {
+    color: #1976d2;
 }
 
-/* ============= Representation Card ============= */
+.node-circle--representation.severity-medium iconify-icon {
+    color: #f57c00;
+}
 
-.timeline-card--representation {
+.node-circle--representation.severity-high iconify-icon {
+    color: #d32f2f;
+}
+
+/* ============================================================
+   CONNECTORS
+   ============================================================ */
+
+/* Horizontal connector (circle to card) */
+.node-connector {
+    position: absolute;
+    left: -16px;
+    width: 16px;
+    height: 3px;
+}
+
+.node-connector--action {
+    background: #7bc47f;
+}
+
+.node-connector--severity-low {
+    background: #64b5f6;
+}
+
+.node-connector--severity-medium {
+    background: #ffd54f;
+}
+
+.node-connector--severity-high {
+    background: #ef5350;
+}
+
+/* Vertical connector (between nodes) */
+.node-vertical-connector {
+    position: absolute;
+    left: -36px;
+    width: 4px;
+    border-radius: 2px;
+    z-index: 1;
+}
+
+.node-vertical-connector--action {
+    background: #7bc47f;
+}
+
+.node-vertical-connector--severity-low {
+    background: #64b5f6;
+}
+
+.node-vertical-connector--severity-medium {
+    background: #ffd54f;
+}
+
+.node-vertical-connector--severity-high {
+    background: #ef5350;
+}
+
+/* ============================================================
+   ACTION CARD (Flippable)
+   ============================================================ */
+
+.action-card-container {
+    perspective: 1200px;
+}
+
+.action-card-flipper {
+    position: relative;
+    width: 100%;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transform-style: preserve-3d;
+}
+
+.action-card-flipper--flipped {
+    transform: rotateY(180deg);
+}
+
+.action-card-front,
+.action-card-back {
+    width: 100%;
+    backface-visibility: hidden;
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     overflow: hidden;
 }
 
-.timeline-card__image {
-    width: 100%;
-    height: 120px;
-    object-fit: cover;
-    border-radius: 8px 8px 0 0;
-    margin: -16px -16px 12px;
-    width: calc(100% + 32px);
+.action-card-back {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: rotateY(180deg);
 }
 
-.timeline-card__body {
-    padding: 0;
+/* Card Header */
+.card-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #e8e8e8;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
 }
 
-.timeline-card__title {
+.header-icon {
+    width: 44px;
+    height: 44px;
+    background: #7bc47f;
+    border-radius: 10px;
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.header-icon iconify-icon {
+    font-size: 24px;
+    color: #fff;
+}
+
+.header-icon--back {
+    background: #e8e8e8;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.header-icon--back:hover {
+    background: #d0d0d0;
+}
+
+.header-icon--back iconify-icon {
+    color: #666;
+}
+
+.header-content {
+    flex: 1;
+}
+
+.header-date {
+    font-size: 13px;
+    color: #7bc47f;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.header-title {
+    font-size: 15px;
+    color: #333;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+/* Card Body */
+.card-body {
+    padding: 16px 20px;
+}
+
+.section-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+}
+
+/* Task/Recommendation List */
+.task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.task-item {
+    background: #f8faf8;
+    border: 1.5px dashed #b8d4b8;
+    border-radius: 12px;
+    padding: 14px 16px;
+}
+
+.task-item-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.task-icon {
+    width: 36px;
+    height: 36px;
+    background: #e8f5e9;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.task-icon iconify-icon {
+    font-size: 20px;
+    color: #5ba85f;
+}
+
+.task-content {
+    flex: 1;
+}
+
+.task-title {
     font-size: 14px;
     font-weight: 600;
-    color: #111827;
-    margin: 0 0 6px;
+    color: #333;
+    line-height: 1.4;
+    margin-bottom: 3px;
 }
 
-.timeline-card__description {
-    font-size: 13px;
-    color: #6b7280;
-    margin: 0;
-    line-height: 1.5;
+.task-subtitle {
+    font-size: 12px;
+    color: #888;
+    font-style: italic;
 }
 
-/* ============= Action Card ============= */
-
-.timeline-card--action {
-    border-left: 3px solid #3b82f6;
+.task-item-bottom {
+    padding-top: 10px;
+    border-top: 1px solid #e0e8e0;
 }
 
-.timeline-card__tasks {
-    margin-top: 12px;
-}
-
-.timeline-card__task-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 0;
-    border-bottom: 1px solid #f3f4f6;
-}
-
-.timeline-card__task-item:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-}
-
-.timeline-card__task-status {
-    font-size: 14px;
-}
-
-.timeline-card__task-title {
-    font-size: 13px;
-    color: #374151;
-}
-
-/* ============= View Mode Toggle ============= */
-
-.timeline-view-toggle {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    display: flex;
-    justify-content: center;
-    padding: 8px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid #e5e7eb;
-    margin-bottom: 16px;
-}
-
-.timeline-view-toggle__btn {
-    padding: 8px 16px;
-    font-size: 13px;
+.task-price {
+    font-size: 12px;
     font-weight: 500;
-    color: #6b7280;
-    background: transparent;
-    border: 1px solid #e5e7eb;
+}
+
+.task-price--confirmed {
+    color: #4caf50;
+}
+
+.task-price--not-confirmed {
+    color: #ff9800;
+}
+
+/* Card Footer */
+.card-footer {
+    padding: 16px 20px;
+    border-top: 1px dashed #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.footer-btn {
+    width: 100%;
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
     cursor: pointer;
     transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.timeline-view-toggle__btn:first-child {
-    border-radius: 6px 0 0 6px;
+.footer-btn--primary {
+    background: #e8f5e9;
+    border: 2px dashed #7bc47f;
+    color: #5ba85f;
 }
 
-.timeline-view-toggle__btn:last-child {
-    border-radius: 0 6px 6px 0;
-    margin-left: -1px;
+.footer-btn--primary:hover {
+    background: #d4edda;
+    border-style: solid;
 }
 
-.timeline-view-toggle__btn--active {
-    background: #3b82f6;
-    color: white;
-    border-color: #3b82f6;
+.footer-btn--secondary {
+    background: #e8f5e9;
+    border: 2px solid #7bc47f;
+    color: #5ba85f;
 }
 
-.timeline-view-toggle__btn:not(.timeline-view-toggle__btn--active):hover {
-    background: #f9fafb;
+.footer-btn--secondary:hover {
+    background: #7bc47f;
+    color: #fff;
 }
 
-/* ============= Responsive ============= */
+/* Empty State */
+.empty-state {
+    color: #999;
+    font-size: 13px;
+    padding: 20px 0;
+    text-align: center;
+}
 
-@media (max-width: 768px) {
-    .timeline-card {
-        padding: 12px;
-    }
+/* ============================================================
+   REPRESENTATION CARD
+   ============================================================ */
 
-    .timeline-card__image {
-        height: 80px;
-        margin: -12px -12px 10px;
-        width: calc(100% + 24px);
-    }
+.representation-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    padding: 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.representation-card--severity-low {
+    border-left: 4px solid #64b5f6;
+    background: linear-gradient(135deg, #e3f2fd 0%, #fff 100%);
+}
+
+.representation-card--severity-medium {
+    border-left: 4px solid #ffd54f;
+    background: linear-gradient(135deg, #fff8e1 0%, #fff 100%);
+}
+
+.representation-card--severity-high {
+    border-left: 4px solid #ef5350;
+    background: linear-gradient(135deg, #ffebee 0%, #fff 100%);
+}
+
+.representation-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.representation-card--severity-low .representation-icon {
+    background: #bbdefb;
+}
+
+.representation-card--severity-low .representation-icon iconify-icon {
+    color: #1976d2;
+}
+
+.representation-card--severity-medium .representation-icon {
+    background: #ffe082;
+}
+
+.representation-card--severity-medium .representation-icon iconify-icon {
+    color: #f57c00;
+}
+
+.representation-card--severity-high .representation-icon {
+    background: #ffcdd2;
+}
+
+.representation-card--severity-high .representation-icon iconify-icon {
+    color: #d32f2f;
+}
+
+.representation-icon iconify-icon {
+    font-size: 26px;
+}
+
+.representation-content {
+    flex: 1;
+}
+
+.representation-title {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.6;
+}
+
+.representation-card--severity-low .representation-title {
+    color: #1565c0;
+}
+
+.representation-card--severity-medium .representation-title {
+    color: #e65100;
+}
+
+.representation-card--severity-high .representation-title {
+    color: #c62828;
+}
+
+/* ============================================================
+   START/END NODES
+   ============================================================ */
+
+.timeline-boundary-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.timeline-boundary-card--start {
+    border-left: 4px solid #7bc47f;
+}
+
+.timeline-boundary-card--end {
+    border-left: 4px solid #ef5350;
+}
+
+.timeline-boundary-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.timeline-boundary-card--start .timeline-boundary-icon {
+    background: #e8f5e9;
+}
+
+.timeline-boundary-card--start .timeline-boundary-icon iconify-icon {
+    color: #5ba85f;
+}
+
+.timeline-boundary-card--end .timeline-boundary-icon {
+    background: #ffebee;
+}
+
+.timeline-boundary-card--end .timeline-boundary-icon iconify-icon {
+    color: #ef5350;
+}
+
+.timeline-boundary-icon iconify-icon {
+    font-size: 20px;
+}
+
+.timeline-boundary-content {
+    flex: 1;
+}
+
+.timeline-boundary-date {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 2px;
+}
+
+.timeline-boundary-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
 }

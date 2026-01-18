@@ -1,7 +1,8 @@
-// Timeline Module - Public API
-
-export { Timeline, TimelineRenderer, useTimeline, useNode } from './Timeline';
-export { useTimelineLayout, useTimelineAnimation, useStyleConfig } from './hooks';
-export { loadStyle, getDefaultStyle, clearStyleCache } from './styles';
+// Timeline Component Exports
+export { TimelineRenderer } from './Timeline';
 export type * from './TimelineTypes';
-export type { TimelineStyle } from './styles';
+
+// Re-export sub-components for direct use if needed
+export { default as TimelineChat } from './TimelineChat';
+export { default as TimelineNotificationsPanel } from './TimelineNotificationsPanel';
+export { default as TimelineSettingsPanel } from './TimelineSettingsPanel';

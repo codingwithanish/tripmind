@@ -1,85 +1,412 @@
-// Timeline - Main compound component export
-// Provides the Timeline.* API as specified in the design
+// Timeline V2 - Main Component
+// Renders timeline nodes with action cards and representation cards
 
-import React from 'react';
-import { TimelineProvider } from './TimelineContext';
-import { Spine, Node, Marker, Connector, Content, DateBadge } from './components';
-import { StartSlot, EndSlot, ActivitySlot, RepresentationSlot, UserInputSlot } from './components/slots';
-import type { TimelineRootProps, TimelineNode } from './TimelineTypes';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import type {
+    TimelineNode,
+    TaskElement,
+    RecommendationElement,
+    TimelineRendererProps,
+} from './TimelineTypes';
+import { TimelineConfig, getSeverityFromNode, mapIcon } from './TimelineTypes';
 import './Timeline.css';
 
-// ============= Root Component =============
+// ============================================================
+// ICONIFY COMPONENT WRAPPER
+// ============================================================
 
-function Root({
-    data,
-    style = 'default',
-    className = '',
-    children,
-    onTaskComplete,
-    onTaskSkip,
-    onRecommendationAccept,
-    onRecommendationIgnore,
-    onAdditionalInput,
-}: TimelineRootProps) {
+interface IconProps {
+    icon: string;
+    className?: string;
+}
+
+// Using the iconify-icon web component
+const Icon: React.FC<IconProps> = ({ icon, className }) => {
+    return React.createElement('iconify-icon', { icon, class: className });
+};
+
+// ============================================================
+// TASK ITEM COMPONENT
+// ============================================================
+
+interface TaskItemComponentProps {
+    item: TaskElement | RecommendationElement;
+    type: 'task' | 'recommendation';
+}
+
+const TaskItem: React.FC<TaskItemComponentProps> = ({ item, type }) => {
+    const icon = 'title_image' in item ? mapIcon(item.title_image) : 'mdi:checkbox-marked-circle';
+
+    // Get price info
+    let priceText = '';
+    let priceStatus: 'confirmed' | 'not-confirmed' = 'not-confirmed';
+
+    if (type === 'task') {
+        const task = item as TaskElement;
+        if (task.price) {
+            if (task.price.type === 'range' && task.price.range) {
+                priceText = `${task.price.range.min}-${task.price.range.max} ${task.price.unit}`;
+            } else if (task.price.type === 'confirmed' && task.price.confirmed_price) {
+                priceText = `${task.price.confirmed_price} ${task.price.unit}`;
+                priceStatus = 'confirmed';
+            } else if (task.price.value) {
+                priceText = `${task.price.value} ${task.price.unit}`;
+            }
+        }
+    } else {
+        const rec = item as RecommendationElement;
+        if (rec.price_included && rec.price_info) {
+            if (rec.price_info.type === 'range' && rec.price_info.range) {
+                priceText = `${rec.price_info.range.min}-${rec.price_info.range.max} ${rec.price_info.unit}`;
+            } else if (rec.price_info.type === 'confirmed' && rec.price_info.confirmed_price) {
+                priceText = `${rec.price_info.confirmed_price} ${rec.price_info.unit}`;
+                priceStatus = 'confirmed';
+            } else if (rec.price_info.value) {
+                priceText = `${rec.price_info.value} ${rec.price_info.unit}`;
+            }
+        }
+    }
+
     return (
-        <TimelineProvider
-            data={data}
-            styleName={style}
-            onTaskComplete={onTaskComplete}
-            onTaskSkip={onTaskSkip}
-            onRecommendationAccept={onRecommendationAccept}
-            onRecommendationIgnore={onRecommendationIgnore}
-            onAdditionalInput={onAdditionalInput}
-        >
-            <div className={`timeline-root ${className}`.trim()}>
-                {children}
+        <div className="task-item" data-item-id={item.id}>
+            <div className="task-item-top">
+                <div className="task-icon">
+                    <Icon icon={icon} />
+                </div>
+                <div className="task-content">
+                    <div className="task-title">{item.title}</div>
+                    {item.description && (
+                        <div className="task-subtitle">{item.description}</div>
+                    )}
+                </div>
             </div>
-        </TimelineProvider>
+            {priceText && (
+                <div className="task-item-bottom">
+                    <div className={`task-price task-price--${priceStatus}`}>
+                        {priceText}
+                    </div>
+                </div>
+            )}
+        </div>
     );
+};
+
+// ============================================================
+// ACTION CARD COMPONENT (Flippable)
+// ============================================================
+
+interface ActionCardComponentProps {
+    node: TimelineNode;
+    onHelpRequest?: (nodeId: string) => void;
 }
 
-// ============= Compound Component Export =============
+const ActionCard: React.FC<ActionCardComponentProps> = ({ node, onHelpRequest }) => {
+    const [isFlipped, setIsFlipped] = useState(false);
+    const flipTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-export const Timeline = {
-    // Root container
-    Root,
+    const tasks = node.tasks || [];
+    const recommendations = node.recommendations || [];
+    const hasRecommendations = recommendations.length > 0;
 
-    // Core structural components
-    Spine,
-    Node,
-    Marker,
-    Connector,
-    Content,
-    DateBadge,
+    // Get display info
+    const dateText = node.display_date?.label || '';
+    const firstTask = tasks[0];
+    const infoIcon = firstTask?.title_image
+        ? mapIcon(firstTask.title_image)
+        : TimelineConfig.defaultIcons.action;
+    const infoText = firstTask?.title || 'Action';
 
-    // Node type slots
-    Start: StartSlot,
-    End: EndSlot,
-    Activity: ActivitySlot,
-    Representation: RepresentationSlot,
-    UserInput: UserInputSlot,
-} as const;
+    // Auto-flip timer management
+    const startAutoFlipTimer = useCallback(() => {
+        if (flipTimerRef.current) {
+            clearTimeout(flipTimerRef.current);
+        }
+        flipTimerRef.current = setTimeout(() => {
+            setIsFlipped(false);
+        }, TimelineConfig.autoFlipDelay);
+    }, []);
 
-// ============= Default Renderer Component =============
+    const clearAutoFlipTimer = useCallback(() => {
+        if (flipTimerRef.current) {
+            clearTimeout(flipTimerRef.current);
+            flipTimerRef.current = null;
+        }
+    }, []);
 
-interface TimelineRendererProps extends Omit<TimelineRootProps, 'children'> {
-    renderNode?: (node: TimelineNode) => React.ReactNode;
+    useEffect(() => {
+        return () => clearAutoFlipTimer();
+    }, [clearAutoFlipTimer]);
+
+    const handleFlip = () => {
+        if (isFlipped) {
+            setIsFlipped(false);
+            clearAutoFlipTimer();
+        } else {
+            setIsFlipped(true);
+            startAutoFlipTimer();
+        }
+    };
+
+    const handleHelpClick = () => {
+        onHelpRequest?.(node.id);
+    };
+
+    const handleMouseMove = () => {
+        if (isFlipped) {
+            startAutoFlipTimer(); // Reset timer on interaction
+        }
+    };
+
+    return (
+        <div className="action-card-container">
+            <div
+                className={`action-card-flipper ${isFlipped ? 'action-card-flipper--flipped' : ''}`}
+                onMouseMove={handleMouseMove}
+            >
+                {/* Front - Tasks */}
+                <div className="action-card-front">
+                    <div className="card-header">
+                        <div className="header-icon">
+                            <Icon icon={infoIcon} />
+                        </div>
+                        <div className="header-content">
+                            <div className="header-date">{dateText}</div>
+                            <div className="header-title">{infoText}</div>
+                        </div>
+                    </div>
+                    <div className="card-body">
+                        <div className="section-label">Actions</div>
+                        <div className="task-list">
+                            {tasks.length > 0 ? (
+                                tasks.map((task: TaskElement) => (
+                                    <TaskItem key={task.id} item={task} type="task" />
+                                ))
+                            ) : (
+                                <div className="empty-state">No actions available</div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="card-footer">
+                        {hasRecommendations && (
+                            <button className="footer-btn footer-btn--primary" onClick={handleFlip}>
+                                Show More Recommendations
+                            </button>
+                        )}
+                        <button className="footer-btn footer-btn--secondary" onClick={handleHelpClick}>
+                            I Need Some Help Here
+                        </button>
+                    </div>
+                </div>
+
+                {/* Back - Recommendations */}
+                <div className="action-card-back">
+                    <div className="card-header">
+                        <div className="header-icon header-icon--back" onClick={handleFlip}>
+                            <Icon icon={TimelineConfig.defaultIcons.back} />
+                        </div>
+                        <div className="header-content">
+                            <div className="header-date">{dateText}</div>
+                            <div className="header-title">{infoText}</div>
+                        </div>
+                    </div>
+                    <div className="card-body">
+                        <div className="section-label">Our Recommendations</div>
+                        <div className="task-list">
+                            {hasRecommendations ? (
+                                recommendations.map((rec: RecommendationElement) => (
+                                    <TaskItem key={rec.id} item={rec} type="recommendation" />
+                                ))
+                            ) : (
+                                <div className="empty-state">No recommendations available for this action.</div>
+                            )}
+                        </div>
+                    </div>
+                    <div className="card-footer">
+                        <button className="footer-btn footer-btn--secondary" onClick={handleHelpClick}>
+                            I Need Some Help Here
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================
+// REPRESENTATION CARD COMPONENT
+// ============================================================
+
+interface RepresentationCardComponentProps {
+    node: TimelineNode;
 }
 
-/**
- * Default Timeline renderer that handles common patterns
- * Can be used as-is or as reference for custom implementations
- */
+const RepresentationCard: React.FC<RepresentationCardComponentProps> = ({ node }) => {
+    const severity = getSeverityFromNode(node);
+    const rep = node.representations?.[0];
+
+    if (!rep) return null;
+
+    const icon = mapIcon(rep.icon);
+
+    return (
+        <div className={`representation-card representation-card--severity-${severity}`}>
+            <div className="representation-icon">
+                <Icon icon={icon} />
+            </div>
+            <div className="representation-content">
+                <div className="representation-title">{rep.title}</div>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================
+// BOUNDARY CARD COMPONENT (Start/End)
+// ============================================================
+
+interface BoundaryCardProps {
+    type: 'start' | 'end';
+    node: TimelineNode;
+}
+
+const BoundaryCard: React.FC<BoundaryCardProps> = ({ type, node }) => {
+    const icon = type === 'start' ? TimelineConfig.defaultIcons.start : TimelineConfig.defaultIcons.end;
+    const label = type === 'start' ? 'Journey Begins' : 'Journey Ends';
+
+    return (
+        <div className={`timeline-boundary-card timeline-boundary-card--${type}`}>
+            <div className="timeline-boundary-icon">
+                <Icon icon={icon} />
+            </div>
+            <div className="timeline-boundary-content">
+                {node.display_date?.label && (
+                    <div className="timeline-boundary-date">{node.display_date.label}</div>
+                )}
+                <div className="timeline-boundary-label">{label}</div>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================
+// TIMELINE NODE COMPONENT
+// ============================================================
+
+interface TimelineNodeComponentProps {
+    node: TimelineNode;
+    isLast: boolean;
+    onHelpRequest?: (nodeId: string) => void;
+}
+
+const TimelineNodeComponent: React.FC<TimelineNodeComponentProps> = ({
+    node,
+    isLast,
+    onHelpRequest,
+}) => {
+    const config = TimelineConfig.spacing;
+
+    // Determine node type and severity
+    const isAction = node.type === 'task_node' && node.subtype !== 'additional_input';
+    const isRepresentation = node.type === 'representation_node';
+    const isStart = node.type === 'start';
+    const isEnd = node.type === 'end';
+
+    const severity = isRepresentation ? getSeverityFromNode(node) : undefined;
+
+    // Calculate circle position
+    let circleTop = config.circleOffset;
+    if (isRepresentation) {
+        // Center circle vertically with representation card
+        circleTop = (config.representationHeight / 2) - (config.circleSize / 2);
+    }
+
+    // Connector positions
+    const horizontalConnectorTop = circleTop + (config.circleSize / 2) - (config.lineHeight / 2);
+    const verticalConnectorTop = circleTop + (config.circleSize / 2);
+
+    // Connector class
+    let connectorClass = 'node-connector--action';
+    let verticalClass = 'node-vertical-connector--action';
+    if (isRepresentation && severity) {
+        connectorClass = `node-connector--severity-${severity}`;
+        verticalClass = `node-vertical-connector--severity-${severity}`;
+    }
+
+    // Circle class
+    let circleClass = 'node-circle--action';
+    if (isRepresentation) {
+        circleClass = `node-circle--representation severity-${severity || 'low'}`;
+    }
+
+    // Get icon for circle
+    let circleIcon: string = TimelineConfig.defaultIcons.action;
+    if (isRepresentation) {
+        const rep = node.representations?.[0];
+        circleIcon = mapIcon(rep?.icon);
+    } else if (isStart) {
+        circleIcon = TimelineConfig.defaultIcons.start;
+    } else if (isEnd) {
+        circleIcon = TimelineConfig.defaultIcons.end;
+    } else if (node.tasks?.[0]?.title_image) {
+        circleIcon = mapIcon(node.tasks[0].title_image);
+    }
+
+    return (
+        <div
+            className="timeline-node"
+            data-node-id={node.id}
+            style={{ marginBottom: config.nodeBuffer }}
+        >
+            {/* Node Circle */}
+            <div
+                className={`node-circle ${circleClass}`}
+                style={{ top: circleTop }}
+            >
+                <Icon icon={circleIcon} />
+            </div>
+
+            {/* Horizontal Connector */}
+            {!isStart && !isEnd && (
+                <div
+                    className={`node-connector ${connectorClass}`}
+                    style={{ top: horizontalConnectorTop }}
+                />
+            )}
+
+            {/* Vertical Connector (to next node) */}
+            {!isLast && (
+                <div
+                    className={`node-vertical-connector ${verticalClass}`}
+                    style={{
+                        top: verticalConnectorTop,
+                        height: `calc(100% - ${verticalConnectorTop}px + ${config.nodeBuffer}px + ${config.circleSize}px)`,
+                    }}
+                />
+            )}
+
+            {/* Card Content */}
+            <div className="card-wrapper">
+                {isStart && <BoundaryCard type="start" node={node} />}
+                {isEnd && <BoundaryCard type="end" node={node} />}
+                {isAction && <ActionCard node={node} onHelpRequest={onHelpRequest} />}
+                {isRepresentation && <RepresentationCard node={node} />}
+            </div>
+        </div>
+    );
+};
+
+// ============================================================
+// TIMELINE RENDERER (Main Export)
+// ============================================================
+
 export function TimelineRenderer({
     data,
-    style,
-    className,
-    renderNode,
-    ...eventHandlers
+    className = '',
+    onHelpRequest,
 }: TimelineRendererProps) {
     if (!data) {
         return (
-            <div className={`timeline-root timeline-root--loading ${className || ''}`.trim()}>
+            <div className={`timeline-container ${className}`.trim()}>
                 <div className="timeline-loading">
                     <div className="timeline-loading__spinner" />
                     <p>Loading timeline...</p>
@@ -88,108 +415,25 @@ export function TimelineRenderer({
         );
     }
 
+    // Sort nodes by order
     const sortedNodes = [...data.nodes].sort((a, b) => a.order - b.order);
 
     return (
-        <Timeline.Root data={data} style={style} className={className} {...eventHandlers}>
-            <Timeline.Spine />
-            {sortedNodes.map(node => (
-                <Timeline.Node key={node.id} node={node}>
-                    {renderNode ? renderNode(node) : (
-                        <>
-                            <Timeline.Marker />
-                            <Timeline.DateBadge />
-                            <Timeline.Connector />
-                            <Timeline.Content>
-                                {/* Default content based on node type */}
-                                <DefaultNodeContent node={node} />
-                            </Timeline.Content>
-                        </>
-                    )}
-                </Timeline.Node>
+        <div className={`timeline-container ${className}`.trim()}>
+            {sortedNodes.map((node, index) => (
+                <TimelineNodeComponent
+                    key={node.id}
+                    node={node}
+                    isLast={index === sortedNodes.length - 1}
+                    onHelpRequest={onHelpRequest}
+                />
             ))}
-        </Timeline.Root>
+        </div>
     );
 }
 
-// ============= Default Node Content =============
+// Default export for backwards compatibility
+export default TimelineRenderer;
 
-interface DefaultNodeContentProps {
-    node: TimelineNode;
-}
-
-function DefaultNodeContent({ node }: DefaultNodeContentProps) {
-    switch (node.type) {
-        case 'start':
-            return (
-                <div className="timeline-card timeline-card--start">
-                    <span className="timeline-card__date">{node.display_date?.label}</span>
-                    <span className="timeline-card__label">Journey Begins</span>
-                </div>
-            );
-
-        case 'end':
-            return (
-                <div className="timeline-card timeline-card--end">
-                    <span className="timeline-card__date">{node.display_date?.label}</span>
-                    <span className="timeline-card__label">Journey Ends</span>
-                </div>
-            );
-
-        case 'representation_node':
-            const rep = node.representations?.[0];
-            return rep ? (
-                <div className="timeline-card timeline-card--representation">
-                    {rep.image && <img src={rep.image} alt={rep.title} className="timeline-card__image" />}
-                    <div className="timeline-card__body">
-                        <h4 className="timeline-card__title">
-                            {rep.icon && <span className="timeline-card__icon">{rep.icon === 'sun' ? '☀️' : '📌'}</span>}
-                            {rep.title}
-                        </h4>
-                        <p className="timeline-card__description">{rep.description}</p>
-                    </div>
-                </div>
-            ) : null;
-
-        case 'task_node':
-        default:
-            // Check if this is an additional_input subtype
-            if (node.subtype === 'additional_input' && node.additional_input) {
-                return (
-                    <div className="timeline-card timeline-card--input">
-                        <span className="timeline-card__icon">❓</span>
-                        <p className="timeline-card__question">{node.additional_input.question}</p>
-                        <div className="timeline-card__input-hint">
-                            <span>⏸️</span> Answer to continue
-                        </div>
-                    </div>
-                );
-            }
-
-            // For action nodes, we'd typically render tasks/recommendations
-            return (
-                <div className="timeline-card timeline-card--action">
-                    <span className="timeline-card__date">{node.display_date?.label}</span>
-                    {node.tasks && node.tasks.length > 0 && (
-                        <div className="timeline-card__tasks">
-                            {node.tasks.map(task => (
-                                <div key={task.id} className="timeline-card__task-item">
-                                    <span className="timeline-card__task-status">
-                                        {task.execution_state === 'completed' ? '✅' : '⏳'}
-                                    </span>
-                                    <span className="timeline-card__task-title">{task.title}</span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            );
-    }
-}
-
-// ============= Re-exports =============
-
-export { useTimeline, useNode } from './TimelineContext';
-export { useTimelineLayout, useTimelineAnimation, useStyleConfig } from './hooks';
+// Re-export types
 export type * from './TimelineTypes';
-export type { TimelineStyle } from './styles';
