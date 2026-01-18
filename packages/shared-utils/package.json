@@ -1,0 +1,20 @@
+{
+    "name": "@tripmind/shared-utils",
+    "version": "1.0.0",
+    "description": "Shared utilities - logging, errors, tracing for TripMind",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch"
+    },
+    "keywords": [
+        "tripmind",
+        "utils",
+        "logging"
+    ],
+    "license": "ISC",
+    "devDependencies": {
+        "typescript": "^5.2.2"
+    }
+}

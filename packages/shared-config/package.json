@@ -1,0 +1,23 @@
+{
+    "name": "@tripmind/shared-config",
+    "version": "1.0.0",
+    "description": "Shared configuration and environment loader for TripMind",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch"
+    },
+    "keywords": [
+        "tripmind",
+        "config",
+        "env"
+    ],
+    "license": "ISC",
+    "dependencies": {
+        "dotenv": "^16.3.1"
+    },
+    "devDependencies": {
+        "typescript": "^5.2.2"
+    }
+}

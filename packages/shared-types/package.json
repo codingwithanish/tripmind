@@ -1,0 +1,20 @@
+{
+    "name": "@tripmind/shared-types",
+    "version": "1.0.0",
+    "description": "Shared TypeScript types and API contracts for TripMind",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch"
+    },
+    "keywords": [
+        "tripmind",
+        "types",
+        "schemas"
+    ],
+    "license": "ISC",
+    "devDependencies": {
+        "typescript": "^5.2.2"
+    }
+}

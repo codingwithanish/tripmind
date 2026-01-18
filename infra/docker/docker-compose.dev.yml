@@ -1,0 +1,33 @@
+version: '3.8'
+
+# Development overrides
+services:
+  web-ui:
+    build:
+      context: ../../apps/web-ui
+      target: development
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../../apps/web-ui:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:3000
+    command: npm run dev -- --host
+
+  api-service:
+    build:
+      context: ../../services/api-service
+      target: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../../services/api-service:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    command: npm run dev
+
+  mongodb:
+    ports:
+      - "27017:27017"

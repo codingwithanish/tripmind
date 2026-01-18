@@ -1,17 +1,30 @@
 {
   "name": "tripmind",
   "version": "1.0.0",
-  "description": "Travel Planning Application",
+  "description": "Travel Planning Application - Monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "services/*",
+    "packages/*"
+  ],
   "scripts": {
-    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
-    "dev:frontend": "cd frontend && npm run dev",
-    "dev:backend": "cd backend && npm run dev",
+    "install:all": "npm install && cd apps/web-ui && npm install && cd ../../services/api-service && npm install",
+    "dev:frontend": "cd apps/web-ui && npm run dev",
+    "dev:backend": "cd services/api-service && npm run dev",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "build:frontend": "cd frontend && npm run build",
-    "build:backend": "cd backend && npm run build",
-    "build": "npm run build:backend && npm run build:frontend"
+    "build:frontend": "cd apps/web-ui && npm run build",
+    "build:backend": "cd services/api-service && npm run build",
+    "build": "npm run build:backend && npm run build:frontend",
+    "lint": "npm run lint:frontend && npm run lint:backend",
+    "lint:frontend": "cd apps/web-ui && npm run lint",
+    "lint:backend": "cd services/api-service && npm run lint"
   },
-  "keywords": ["travel", "planning"],
+  "keywords": [
+    "travel",
+    "planning",
+    "monorepo"
+  ],
   "author": "",
   "license": "ISC",
   "devDependencies": {

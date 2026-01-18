@@ -745,14 +745,16 @@
                 // Horizontal connector: vertically centered on circle
                 const horizontalConnectorTop = circleTop + (circleSize / 2) - (lineHeight / 2);
 
-                // Vertical connector: from center of circle down to next node
-                // Starts at circle center and uses calc() for dynamic height based on actual rendered content
+                // Vertical connector: from center of circle down to next node's circle center
+                // Starts at circle center and uses calc() for dynamic height
+                // Height = 100% of container - startPos + margin buffer + offset into next node to reach its circle
                 const verticalConnectorTop = circleTop + (circleSize / 2); // Start from circle center
                 const buffer = TimelineConfig.spacing.nodeBuffer;
+                const nextNodeCircleOffset = circleSize; // Extend into next node to reach its circle center
 
                 // Only show vertical connector if not the last node
                 const verticalConnector = isLast ? '' : `
-                    <div class="node-vertical-connector action" style="top: ${verticalConnectorTop}px; height: calc(100% - ${verticalConnectorTop}px + ${buffer}px);"></div>
+                    <div class="node-vertical-connector action" style="top: ${verticalConnectorTop}px; height: calc(100% - ${verticalConnectorTop}px + ${buffer}px + ${nextNodeCircleOffset}px);"></div>
                 `;
 
                 wrapper.innerHTML = `
@@ -901,13 +903,14 @@
                 // Horizontal connector: vertically centered on circle
                 const horizontalConnectorTop = circleTop + (circleSize / 2) - (lineHeight / 2);
 
-                // Vertical connector: from center of circle down to next node
+                // Vertical connector: from center of circle down to next node's circle center
                 const verticalConnectorTop = circleTop + (circleSize / 2); // Start from circle center
                 const buffer = TimelineConfig.spacing.nodeBuffer;
+                const nextNodeCircleOffset = circleSize; // Extend into next node to reach its circle center
 
                 // Only show vertical connector if not the last node
                 const verticalConnector = isLast ? '' : `
-                    <div class="node-vertical-connector severity-${severity}" style="top: ${verticalConnectorTop}px; height: calc(100% - ${verticalConnectorTop}px + ${buffer}px);"></div>
+                    <div class="node-vertical-connector severity-${severity}" style="top: ${verticalConnectorTop}px; height: calc(100% - ${verticalConnectorTop}px + ${buffer}px + ${nextNodeCircleOffset}px);"></div>
                 `;
 
                 wrapper.innerHTML = `

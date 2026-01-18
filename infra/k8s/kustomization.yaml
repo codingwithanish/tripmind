@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: tripmind
+
+resources:
+  - base/api-service.yaml
+  - base/ai-service.yaml
+  - base/integration-service.yaml
+  - base/web-ui.yaml
+  - base/ingress.yaml
+
+commonLabels:
+  app.kubernetes.io/name: tripmind
+  app.kubernetes.io/managed-by: kustomize

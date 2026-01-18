@@ -1,0 +1,25 @@
+{
+    "name": "@tripmind/auth-lib",
+    "version": "1.0.0",
+    "description": "JWT and RBAC helpers for TripMind authentication",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch"
+    },
+    "keywords": [
+        "tripmind",
+        "auth",
+        "jwt",
+        "rbac"
+    ],
+    "license": "ISC",
+    "dependencies": {
+        "jsonwebtoken": "^9.0.2"
+    },
+    "devDependencies": {
+        "@types/jsonwebtoken": "^9.0.5",
+        "typescript": "^5.2.2"
+    }
+}
