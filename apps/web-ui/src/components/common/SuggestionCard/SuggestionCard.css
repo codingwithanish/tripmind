@@ -20,6 +20,40 @@
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15), 0 8px 24px rgba(59, 130, 246, 0.12);
 }
 
+/* Completed state - glowing border */
+.suggestion-card.completed {
+  border-color: var(--color-primary);
+  box-shadow:
+    0 0 0 3px rgba(59, 130, 246, 0.25),
+    0 0 20px rgba(59, 130, 246, 0.3),
+    0 8px 24px rgba(59, 130, 246, 0.15);
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px rgba(59, 130, 246, 0.25),
+      0 0 20px rgba(59, 130, 246, 0.3),
+      0 8px 24px rgba(59, 130, 246, 0.15);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 4px rgba(59, 130, 246, 0.35),
+      0 0 30px rgba(59, 130, 246, 0.4),
+      0 8px 28px rgba(59, 130, 246, 0.2);
+  }
+}
+
+/* Dimmed state - reduced opacity for inactive suggestions */
+.suggestion-card.dimmed {
+  opacity: 0.5;
+  transform: scale(0.98);
+}
+
 .suggestion-content {
   flex: 1;
   font-size: var(--text-lg);
@@ -35,6 +69,21 @@
 
 .template-text {
   white-space: pre-wrap;
+}
+
+/* HTML element styling within template text */
+.template-text b,
+.template-text strong {
+  font-weight: var(--font-bold);
+}
+
+.template-text i,
+.template-text em {
+  font-style: italic;
+}
+
+.template-text u {
+  text-decoration: underline;
 }
 
 .placeholder-wrapper {
@@ -98,9 +147,12 @@
 }
 
 @keyframes blink {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0;
   }

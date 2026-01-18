@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { SuggestionTemplate } from '@services/suggestionService';
 import './SuggestionCard.css';
 
@@ -15,16 +15,28 @@ interface TypewriterState {
   isForward: boolean; // true = filling placeholders, false = erasing them
 }
 
+export interface SuggestionCardRef {
+  reset: () => void;
+}
+
 interface SuggestionCardProps {
   template: SuggestionTemplate;
   onSubmit: (resolvedSentence: string) => void;
+  onFocus?: () => void;
+  onCompleteChange?: (isComplete: boolean) => void;
+  isActive?: boolean;
+  isCompleted?: boolean;
+  isDimmed?: boolean;
 }
 
 const TYPING_SPEED = 80;
 const ERASING_SPEED = 40;
 const PAUSE_DURATION = 2000;
 
-const SuggestionCard: React.FC<SuggestionCardProps> = ({ template, onSubmit }) => {
+const SuggestionCard = forwardRef<SuggestionCardRef, SuggestionCardProps>((
+  { template, onSubmit, onFocus, onCompleteChange, isCompleted, isDimmed },
+  ref
+) => {
   const [placeholderValues, setPlaceholderValues] = useState<Record<string, PlaceholderValue>>({});
   const [focusedPlaceholder, setFocusedPlaceholder] = useState<string | null>(null);
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -36,6 +48,21 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({ template, onSubmit }) =
   const maxOptions = useMemo(() => {
     return Math.max(...Object.values(template.placeholders).map((p) => p.options.length), 1);
   }, [template.placeholders]);
+
+  // Expose reset method to parent
+  useImperativeHandle(ref, () => ({
+    reset: () => {
+      const initial: Record<string, PlaceholderValue> = {};
+      placeholderKeys.forEach((key) => {
+        initial[key] = {
+          value: '',
+          isCommitted: false,
+        };
+      });
+      setPlaceholderValues(initial);
+      setFocusedPlaceholder(null);
+    },
+  }), [placeholderKeys]);
 
   // Typewriter state
   const [typewriter, setTypewriter] = useState<TypewriterState>({
@@ -252,6 +279,7 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({ template, onSubmit }) =
 
   const handleInputFocus = (key: string) => {
     setFocusedPlaceholder(key);
+    onFocus?.();
   };
 
   const handleInputBlur = () => {
@@ -293,6 +321,12 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({ template, onSubmit }) =
     });
   }, [template.placeholders, placeholderValues]);
 
+  // Notify parent when completion state changes
+  useEffect(() => {
+    const isComplete = isAllRequiredFilled();
+    onCompleteChange?.(isComplete);
+  }, [isAllRequiredFilled, onCompleteChange]);
+
   const getResolvedSentence = (): string => {
     let sentence = template.template_text;
     Object.entries(placeholderValues).forEach(([key, val]) => {
@@ -325,12 +359,15 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({ template, onSubmit }) =
     let match;
 
     while ((match = regex.exec(template.template_text)) !== null) {
-      // Add text before placeholder
+      // Add text before placeholder (render as HTML)
       if (match.index > lastIndex) {
+        const textContent = template.template_text.slice(lastIndex, match.index);
         parts.push(
-          <span key={`text-${lastIndex}`} className="template-text">
-            {template.template_text.slice(lastIndex, match.index)}
-          </span>
+          <span
+            key={`text-${lastIndex}`}
+            className="template-text"
+            dangerouslySetInnerHTML={{ __html: textContent }}
+          />
         );
       }
 
@@ -394,20 +431,31 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({ template, onSubmit }) =
       lastIndex = match.index + match[0].length;
     }
 
-    // Add remaining text
+    // Add remaining text (render as HTML)
     if (lastIndex < template.template_text.length) {
+      const textContent = template.template_text.slice(lastIndex);
       parts.push(
-        <span key={`text-${lastIndex}`} className="template-text">
-          {template.template_text.slice(lastIndex)}
-        </span>
+        <span
+          key={`text-${lastIndex}`}
+          className="template-text"
+          dangerouslySetInnerHTML={{ __html: textContent }}
+        />
       );
     }
 
     return parts;
   };
 
+  // Build class names for the card
+  const cardClassName = useMemo(() => {
+    const classes = ['suggestion-card'];
+    if (isCompleted) classes.push('completed');
+    if (isDimmed) classes.push('dimmed');
+    return classes.join(' ');
+  }, [isCompleted, isDimmed]);
+
   return (
-    <div className="suggestion-card">
+    <div className={cardClassName}>
       <div className="suggestion-content">{renderTemplate()}</div>
       <button
         type="button"
@@ -431,6 +479,6 @@ const SuggestionCard: React.FC<SuggestionCardProps> = ({ template, onSubmit }) =
       </button>
     </div>
   );
-};
+});
 
 export default SuggestionCard;

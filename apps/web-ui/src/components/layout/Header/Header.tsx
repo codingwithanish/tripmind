@@ -9,6 +9,7 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [notificationCount, setNotificationCount] = useState(3); // Mock notification count
   const profileDropdownRef = useRef<HTMLDivElement>(null);
@@ -16,7 +17,21 @@ const Header: React.FC = () => {
   // Close mobile menu when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
+    setIsClosing(false);
   }, [location]);
+
+  // Close mobile menu when screen expands to desktop width
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768 && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+        setIsClosing(false);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isMobileMenuOpen]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -36,12 +51,25 @@ const Header: React.FC = () => {
   const handleLogout = () => {
     logout();
     setIsProfileDropdownOpen(false);
-    setIsMobileMenuOpen(false);
+    closeMobileMenu();
     navigate(ROUTES.HOME);
   };
 
   const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
+    if (isMobileMenuOpen) {
+      closeMobileMenu();
+    } else {
+      setIsMobileMenuOpen(true);
+      setIsClosing(false);
+    }
+  };
+
+  const closeMobileMenu = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsMobileMenuOpen(false);
+      setIsClosing(false);
+    }, 300); // Match animation duration
   };
 
   const toggleProfileDropdown = () => {
@@ -183,8 +211,31 @@ const Header: React.FC = () => {
       {/* Mobile Drawer */}
       {isMobileMenuOpen && (
         <>
-          <div className="mobile-drawer-overlay" onClick={toggleMobileMenu} />
-          <div className="mobile-drawer">
+          <div className={`mobile-drawer-overlay ${isClosing ? 'closing' : ''}`} onClick={closeMobileMenu} />
+          <div className={`mobile-drawer ${isClosing ? 'closing' : ''}`}>
+            {/* Close button header */}
+            <div className="mobile-drawer-header">
+              <button
+                className="mobile-drawer-close"
+                onClick={closeMobileMenu}
+                aria-label="Close menu"
+              >
+                <svg
+                  className="icon"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
             <nav className="mobile-nav">
               <Link to={ROUTES.HOME} className="mobile-nav-item">
                 <svg className="mobile-nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">

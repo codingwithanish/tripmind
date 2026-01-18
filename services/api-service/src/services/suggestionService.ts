@@ -21,83 +21,70 @@ const suggestionTemplates: SuggestionTemplate[] = [
     {
         id: '1',
         order: 1,
-        template_text: 'I want to do a {{trip_type}} trip to {{place}}',
-        description: "Template to capture user's travel intent",
+        template_text:
+            'I’m planning a {{trip_type}} getaway over the next <b>long weekend</b>, focusing on <i>unwinding</i>, quality time, and a calm break from routine.',
+        description: 'Time-based relaxed travel intent',
         placeholders: {
             trip_type: {
                 type: 'string',
                 required: true,
                 options: [
-                    { value: 'solo' },
-                    { value: 'family' },
-                    { value: 'friends' },
-                    { value: 'couple' },
-                ],
-            },
-            place: {
-                type: 'string',
-                required: true,
-                options: [
-                    { value: 'Sydney' },
-                    { value: 'Toronto' },
-                    { value: 'Paris' },
-                    { value: 'Tokyo' },
+                    { value: 'family travel' },
+                    { value: 'solo travel' }
                 ],
             },
         },
     },
+
     {
         id: '2',
         order: 2,
-        template_text: 'Planning for a {{duration}} day travel to {{destination}}',
-        description: 'Template for duration-based travel planning',
-        placeholders: {
-            duration: {
-                type: 'string',
-                required: true,
-                options: [
-                    { value: '2' },
-                    { value: '5' },
-                    { value: '7' },
-                    { value: '10' },
-                ],
-            },
-            destination: {
-                type: 'string',
-                required: true,
-                options: [
-                    { value: 'Munnar' },
-                    { value: 'Goa' },
-                    { value: 'Bali' },
-                    { value: 'Maldives' },
-                ],
-            },
-        },
-    },
-    {
-        id: '3',
-        order: 3,
-        template_text: 'I need a {{budget}} budget trip for {{travelers}} people',
-        description: 'Template for budget-conscious travelers',
+        template_text:
+            'I want to plan a short trip with a budget of {{budget}}, keeping things <i>simple and comfortable</i> while making the most of a limited spend.',
+        description: 'Budget-priority travel intent',
         placeholders: {
             budget: {
                 type: 'string',
                 required: true,
                 options: [
                     { value: '$500' },
-                    { value: '$1000' },
-                    { value: '$2000' },
-                    { value: '$5000' },
+                    { value: '$700' }
                 ],
             },
-            travelers: {
+        },
+    },
+
+    {
+        id: '3',
+        order: 3,
+        template_text:
+            'We are thinking of a {{group_type}} trip during a <b>long weekend</b>, preferring easy travel, relaxed plans, and memorable shared moments.',
+        description: 'Group-based travel intent',
+        placeholders: {
+            group_type: {
+                type: 'string',
+                required: true,
+                options: [
+                    { value: 'family' },
+                    { value: 'friends' }
+                ],
+            },
+        },
+    },
+
+    {
+        id: '4',
+        order: 4,
+        template_text:
+            'I’m looking for a {{duration}}-day escape that feels <i>refreshing and stress-free</i>, without rushing through too many activities.',
+        description: 'Duration-first travel intent',
+        placeholders: {
+            duration: {
                 type: 'string',
                 required: true,
                 options: [
                     { value: '2' },
-                    { value: '4' },
-                    { value: '6' },
-                    { value: '8' },
+                    { value: '3' }
                 ],
             },
         },
