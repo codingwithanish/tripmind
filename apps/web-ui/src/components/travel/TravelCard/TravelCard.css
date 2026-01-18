@@ -1,0 +1,245 @@
+/* TravelCard.css - Styling for the travel card component */
+
+.travel-card {
+    background: var(--bg-secondary, #ffffff);
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border-color, #e5e7eb);
+    overflow: hidden;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.travel-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    transform: translateY(-2px);
+}
+
+/* Header Section */
+.travel-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    gap: 1rem;
+}
+
+.travel-card-title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary, #1f2937);
+    cursor: pointer;
+    transition: color 0.2s ease;
+    line-height: 1.4;
+}
+
+.travel-card-title:hover {
+    color: var(--primary-color, #3b82f6);
+}
+
+/* Status Badge */
+.travel-card-status-badge {
+    padding: 0.375rem 0.875rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.status-confirmed {
+    background-color: #dcfce7;
+    color: #16a34a;
+}
+
+.status-planning {
+    background-color: #dbeafe;
+    color: #2563eb;
+}
+
+.status-completed {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+.status-dropped {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+/* Body Section */
+.travel-card-body {
+    display: flex;
+    padding: 1.25rem 1.5rem;
+    gap: 1.5rem;
+    min-height: 140px;
+}
+
+/* Image Container */
+.travel-card-image-container {
+    flex-shrink: 0;
+    width: 140px;
+    height: 100px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-tertiary, #f3f4f6);
+    border: 1px solid var(--border-color, #e5e7eb);
+}
+
+.travel-card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.travel-card-image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary, #9ca3af);
+}
+
+.placeholder-icon {
+    font-size: 2rem;
+}
+
+/* Summary Section */
+.travel-card-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.travel-card-summary-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.summary-icon {
+    font-size: 1.25rem;
+    color: var(--text-secondary, #6b7280);
+    flex-shrink: 0;
+}
+
+.summary-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.summary-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary, #1f2937);
+}
+
+.summary-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-tertiary, #9ca3af);
+}
+
+/* Footer Section - Notifications */
+.travel-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    background: var(--bg-tertiary, #fef2f2);
+    border-top: 1px solid var(--border-color, #e5e7eb);
+    gap: 1rem;
+}
+
+.travel-card-notification {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-icon {
+    font-size: 1.5rem;
+    color: #dc2626;
+    flex-shrink: 0;
+}
+
+.notification-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.notification-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary, #1f2937);
+}
+
+.notification-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-secondary, #6b7280);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Notification Navigation */
+.notification-navigation {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+.nav-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #dc2626;
+    font-size: 1.5rem;
+    transition: background-color 0.2s ease;
+    border-radius: 4px;
+}
+
+.nav-arrow:hover {
+    background-color: rgba(220, 38, 38, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+    .travel-card-body {
+        flex-direction: column;
+    }
+
+    .travel-card-image-container {
+        width: 100%;
+        height: 160px;
+    }
+
+    .travel-card-header {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .travel-card-status-badge {
+        align-self: flex-start;
+    }
+
+    .travel-card-footer {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .notification-navigation {
+        align-self: flex-end;
+    }
+}

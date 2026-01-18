@@ -5,10 +5,10 @@ import Home from '@pages/Home';
 import Chat from '@pages/Chat';
 import Timeline from '@pages/Timeline';
 import TimelineTest from '@pages/TimelineTest';
+import MyTravels from '@pages/MyTravels';
 import { ROUTES } from '@utils/constants';
 
 // Placeholder components (to be implemented later)
-const MyTravels = () => <div style={{ padding: '2rem' }}>My Travels Page - Coming Soon</div>;
 const Notifications = () => <div style={{ padding: '2rem' }}>Notifications Page - Coming Soon</div>;
 const Login = () => <div style={{ padding: '2rem' }}>Login Page - Coming Soon</div>;
 const Profile = () => <div style={{ padding: '2rem' }}>Profile Page - Coming Soon</div>;
