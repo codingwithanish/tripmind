@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import ChatMessage from '@components/chat/ChatMessage';
 import SuggestionChips from '@components/chat/SuggestionChips';
 import ChatInput from '@components/chat/ChatInput';
-import chatService, { StreamedMessage } from '@services/chatService';
-import { ROUTES } from '@utils/constants';
+import chatService, { StreamEventHandlers, SuggestionItem as ServiceSuggestionItem } from '@services/chatService';
+import { ChatMessage as ChatMessageType } from '@/types/streamTypes';
 import './Chat.css';
 
 interface ChatMessageItem {
@@ -12,27 +12,39 @@ interface ChatMessageItem {
     content: string;
     sender: 'user' | 'bot';
     timestamp: string;
+    type: 'text' | 'markdown';
 }
 
 interface LocationState {
     initialMessage?: string;
 }
 
+interface SuggestionChip {
+    id: string;
+    label: string;
+    value: string;
+    icon?: { provider: string; name: string };
+}
+
 const Chat: React.FC = () => {
+    const { userId, threadId } = useParams<{ userId: string; threadId: string }>();
     const location = useLocation();
     const navigate = useNavigate();
     const state = location.state as LocationState;
 
-    const [threadId, setThreadId] = useState<string | null>(null);
     const [messages, setMessages] = useState<ChatMessageItem[]>([]);
-    const [suggestions, setSuggestions] = useState<string[]>([]);
-    const [contextProgress, setContextProgress] = useState(0); // 0-100 progress
+    const [suggestions, setSuggestions] = useState<SuggestionChip[]>([]);
+    const [contextProgress, setContextProgress] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isInitialized, setIsInitialized] = useState(false);
+    const [currentStreamContent, setCurrentStreamContent] = useState('');
+    const [isStreaming, setIsStreaming] = useState(false);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const initialMessageSent = useRef(false);
+    const hasFetchedRef = useRef(false);
+    const streamContentRef = useRef(''); // Track streaming content for closure
 
     // Scroll to bottom when messages change
     const scrollToBottom = useCallback(() => {
@@ -41,72 +53,151 @@ const Chat: React.FC = () => {
 
     useEffect(() => {
         scrollToBottom();
-    }, [messages, scrollToBottom]);
+    }, [messages, currentStreamContent, scrollToBottom]);
 
-    // Initialize chat thread
+    // Load message history from URL params
     useEffect(() => {
-        const initializeChat = async () => {
-            if (isInitialized) return;
+        if (!userId || !threadId || hasFetchedRef.current) return;
+        hasFetchedRef.current = true;
 
+        const loadMessages = async () => {
             try {
                 setIsLoading(true);
-                const response = await chatService.createThread();
-                setThreadId(response.thread_id);
+                const response = await chatService.getMessages(userId, threadId, {
+                    limit: 50,
+                    view: 'init-chat'
+                });
+
+                // Convert API messages to display format
+                const loadedMessages: ChatMessageItem[] = response.messages.map((msg: ChatMessageType) => ({
+                    id: msg.id,
+                    content: msg.content,
+                    sender: msg.role === 'user' ? 'user' : 'bot',
+                    timestamp: new Date(msg.created_at).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }),
+                    type: msg.type as 'text' | 'markdown',
+                }));
+
+                setMessages(loadedMessages);
                 setIsInitialized(true);
                 setError(null);
+
+                // Also load suggestions
+                try {
+                    const suggestionsResponse = await chatService.getSuggestions(userId, threadId);
+                    setSuggestions(suggestionsResponse.suggestions.map(s => ({
+                        id: s.id,
+                        label: s.label,
+                        value: s.value,
+                        icon: s.icon,
+                    })));
+                } catch {
+                    // Suggestions are optional, don't block on error
+                }
             } catch (err) {
-                console.error('Failed to create chat thread:', err);
-                setError('Failed to start chat. Please try again.');
+                console.error('Failed to load messages:', err);
+                setError('Failed to load chat history. Please try again.');
             } finally {
                 setIsLoading(false);
             }
         };
 
-        initializeChat();
-    }, [isInitialized]);
+        loadMessages();
+    }, [userId, threadId]);
 
-    // Send initial message when thread is ready
+    // Legacy: initialize for /chat route without params
+    useEffect(() => {
+        if (userId && threadId) return; // Using new URL params
+        if (isInitialized) return;
+
+        const initializeChat = async () => {
+            try {
+                setIsLoading(true);
+                const response = await chatService.createThread();
+                // Redirect to new URL format
+                navigate(`/anonymous/${response.thread_id}/chat`, {
+                    replace: true,
+                    state: location.state
+                });
+            } catch (err) {
+                console.error('Failed to create chat thread:', err);
+                setError('Failed to start chat. Please try again.');
+                setIsLoading(false);
+            }
+        };
+
+        initializeChat();
+    }, [userId, threadId, isInitialized, navigate, location.state]);
+
+    // Send initial message for legacy navigation
     useEffect(() => {
         if (
+            userId &&
             threadId &&
             state?.initialMessage &&
             !initialMessageSent.current &&
             isInitialized
         ) {
             initialMessageSent.current = true;
-            handleSendMessage(state.initialMessage);
+            // Initial message already sent via /new endpoint
         }
-    }, [threadId, state?.initialMessage, isInitialized]);
+    }, [userId, threadId, state?.initialMessage, isInitialized]);
 
-    // Handle streamed messages
-    const handleStreamedMessage = useCallback((streamedMsg: StreamedMessage) => {
-        switch (streamedMsg.type) {
-            case 'chat_response':
-                const botMessage: ChatMessageItem = {
-                    id: `bot-${Date.now()}-${Math.random()}`,
-                    content: streamedMsg.content,
-                    sender: 'bot',
-                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                };
-                setMessages((prev) => [...prev, botMessage]);
+    // Create stream event handlers
+    const createStreamHandlers = (): StreamEventHandlers => ({
+        onMessageStart: (_messageId) => {
+            setIsStreaming(true);
+            setCurrentStreamContent('');
+            streamContentRef.current = ''; // Reset ref
+        },
+        onContentToken: (_contentId, value, _contentType) => {
+            streamContentRef.current += value; // Update ref
+            setCurrentStreamContent(streamContentRef.current);
+        },
+        onContentEnd: (_contentId) => {
+            // Content block finished, ready for next
+        },
+        onSuggestions: (items: ServiceSuggestionItem[]) => {
+            setSuggestions(items.map(s => ({
+                id: s.id,
+                label: s.label,
+                value: s.value,
+                icon: s.icon,
+            })));
+        },
+        onMessageEnd: (messageId) => {
+            // Finalize the message - use ref for current content
+            const finalContent = streamContentRef.current;
+            setMessages(prev => [...prev, {
+                id: messageId,
+                content: finalContent,
+                sender: 'bot',
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                type: 'markdown',
+            }]);
+            streamContentRef.current = '';
+            setCurrentStreamContent('');
+            setIsStreaming(false);
 
-                // Update context progress from chat_response (never decreases)
-                if (streamedMsg.timeline_context_collected !== undefined) {
-                    setContextProgress((prev) =>
-                        Math.max(prev, streamedMsg.timeline_context_collected!)
-                    );
-                }
-                break;
+            // Update progress
+            setContextProgress(prev => Math.min(prev + 20, 100));
+        },
+        onError: (err) => {
+            console.error('Streaming error:', err);
+            setError('Failed to get response. Please try again.');
+            setIsStreaming(false);
+            setIsLoading(false);
+        },
+        onComplete: () => {
+            setIsLoading(false);
+        },
+    });
 
-            case 'suggestions':
-                setSuggestions(streamedMsg.content);
-                break;
-        }
-    }, []);
-
-    // Send message
+    // Send message using new streaming API
     const handleSendMessage = async (content: string) => {
-        if (!threadId || isLoading) return;
+        if (!userId || !threadId || isLoading) return;
 
         // Add user message immediately
         const userMessage: ChatMessageItem = {
@@ -114,25 +205,21 @@ const Chat: React.FC = () => {
             content,
             sender: 'user',
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            type: 'text',
         };
-        setMessages((prev) => [...prev, userMessage]);
-        setSuggestions([]); // Clear suggestions
+        setMessages(prev => [...prev, userMessage]);
+        setSuggestions([]);
         setIsLoading(true);
         setError(null);
 
         try {
-            await chatService.sendConversation(
+            await chatService.streamMessage(
+                userId,
                 threadId,
-                content,
-                handleStreamedMessage,
-                (err) => {
-                    console.error('Streaming error:', err);
-                    setError('Failed to get response. Please try again.');
-                },
-                () => {
-                    // On complete
-                    setIsLoading(false);
-                }
+                { role: 'user', type: 'text', content },
+                createStreamHandlers(),
+                { timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
+                { stream: true, enable_suggestions: true }
             );
         } catch (err) {
             console.error('Failed to send message:', err);
@@ -148,13 +235,13 @@ const Chat: React.FC = () => {
 
     // Generate timeline
     const handleGenerateTimeline = async () => {
-        if (!threadId) return;
+        if (!userId || !threadId) return;
 
         try {
             setIsLoading(true);
-            const result = await chatService.completeChat(threadId);
-            // Navigate to timeline page
-            navigate(ROUTES.TIMELINE.replace(':travelId', result.travelId));
+            await chatService.completeChat(threadId);
+            // Navigate to new timeline URL pattern
+            navigate(`/${userId}/${threadId}/timeline`);
         } catch (err) {
             console.error('Failed to generate timeline:', err);
             setError('Failed to generate timeline. Please try again.');
@@ -165,6 +252,7 @@ const Chat: React.FC = () => {
     // Retry initialization
     const handleRetry = () => {
         setError(null);
+        hasFetchedRef.current = false;
         setIsInitialized(false);
     };
 
@@ -200,14 +288,26 @@ const Chat: React.FC = () => {
                             content={msg.content}
                             sender={msg.sender}
                             timestamp={msg.timestamp}
+                            type={msg.type}
                         />
                     ))}
 
-                    {isLoading && messages.length > 0 && (
+                    {/* Show streaming content */}
+                    {isStreaming && currentStreamContent && (
+                        <ChatMessage
+                            content={currentStreamContent}
+                            sender="bot"
+                            type="markdown"
+                        />
+                    )}
+
+                    {/* Show typing indicator when loading but not streaming yet */}
+                    {isLoading && !isStreaming && messages.length > 0 && (
                         <ChatMessage
                             content=""
                             sender="bot"
                             isStreaming={true}
+                            type="text"
                         />
                     )}
 
@@ -218,7 +318,7 @@ const Chat: React.FC = () => {
                 <div className="chat-page__input-area">
                     {suggestions.length > 0 && (
                         <SuggestionChips
-                            suggestions={suggestions}
+                            suggestions={suggestions.map(s => s.label)}
                             onSelect={handleSuggestionSelect}
                             disabled={isLoading}
                         />
@@ -228,7 +328,7 @@ const Chat: React.FC = () => {
                         onSend={handleSendMessage}
                         onGenerateTimeline={handleGenerateTimeline}
                         contextProgress={contextProgress}
-                        disabled={isLoading || !threadId}
+                        disabled={isLoading || (!userId && !threadId)}
                         placeholder="Type your answer..."
                     />
                 </div>

@@ -19,7 +19,9 @@ const AppRoutes: React.FC = () => {
       <Routes>
         <Route path={ROUTES.HOME} element={<Home />} />
         <Route path={ROUTES.CHAT} element={<Chat />} />
+        <Route path={ROUTES.CHAT_ROOM} element={<Chat />} />
         <Route path={ROUTES.TIMELINE} element={<Timeline />} />
+        <Route path={ROUTES.TIMELINE_ROOM} element={<Timeline />} />
         <Route path="/timeline-test" element={<TimelineTest />} />
         <Route path={ROUTES.MY_TRAVELS} element={<MyTravels />} />
         <Route path={ROUTES.NOTIFICATIONS} element={<Notifications />} />

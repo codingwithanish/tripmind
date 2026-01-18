@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { SuggestionTemplate } from '@services/suggestionService';
+import MarkdownRenderer from '@components/common/MarkdownRenderer';
 import './SuggestionCard.css';
 
 interface PlaceholderValue {
@@ -359,15 +360,13 @@ const SuggestionCard = forwardRef<SuggestionCardRef, SuggestionCardProps>((
     let match;
 
     while ((match = regex.exec(template.template_text)) !== null) {
-      // Add text before placeholder (render as HTML)
+      // Add text before placeholder (render as Markdown)
       if (match.index > lastIndex) {
         const textContent = template.template_text.slice(lastIndex, match.index);
         parts.push(
-          <span
-            key={`text-${lastIndex}`}
-            className="template-text"
-            dangerouslySetInnerHTML={{ __html: textContent }}
-          />
+          <span key={`text-${lastIndex}`} className="template-text">
+            <MarkdownRenderer content={textContent} inline />
+          </span>
         );
       }
 
@@ -431,15 +430,13 @@ const SuggestionCard = forwardRef<SuggestionCardRef, SuggestionCardProps>((
       lastIndex = match.index + match[0].length;
     }
 
-    // Add remaining text (render as HTML)
+    // Add remaining text (render as Markdown)
     if (lastIndex < template.template_text.length) {
       const textContent = template.template_text.slice(lastIndex);
       parts.push(
-        <span
-          key={`text-${lastIndex}`}
-          className="template-text"
-          dangerouslySetInnerHTML={{ __html: textContent }}
-        />
+        <span key={`text-${lastIndex}`} className="template-text">
+          <MarkdownRenderer content={textContent} inline />
+        </span>
       );
     }
 

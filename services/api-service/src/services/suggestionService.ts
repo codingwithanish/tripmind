@@ -16,13 +16,13 @@ interface SuggestionTemplate {
     placeholders: Record<string, Placeholder>;
 }
 
-// Hardcoded suggestion templates data
+// Hardcoded suggestion templates data (using Markdown formatting)
 const suggestionTemplates: SuggestionTemplate[] = [
     {
         id: '1',
         order: 1,
         template_text:
-            'I’m planning a {{trip_type}} getaway over the next <b>long weekend</b>, focusing on <i>unwinding</i>, quality time, and a calm break from routine.',
+            "I'm planning a {{trip_type}} getaway over the next **long weekend**, focusing on *unwinding*, quality time, and a calm break from routine.",
         description: 'Time-based relaxed travel intent',
         placeholders: {
             trip_type: {
@@ -40,7 +40,7 @@ const suggestionTemplates: SuggestionTemplate[] = [
         id: '2',
         order: 2,
         template_text:
-            'I want to plan a short trip with a budget of {{budget}}, keeping things <i>simple and comfortable</i> while making the most of a limited spend.',
+            'I want to plan a short trip with a budget of {{budget}}, keeping things *simple and comfortable* while making the most of a limited spend.',
         description: 'Budget-priority travel intent',
         placeholders: {
             budget: {
@@ -58,7 +58,7 @@ const suggestionTemplates: SuggestionTemplate[] = [
         id: '3',
         order: 3,
         template_text:
-            'We are thinking of a {{group_type}} trip during a <b>long weekend</b>, preferring easy travel, relaxed plans, and memorable shared moments.',
+            'We are thinking of a {{group_type}} trip during a **long weekend**, preferring easy travel, relaxed plans, and memorable shared moments.',
         description: 'Group-based travel intent',
         placeholders: {
             group_type: {
@@ -76,7 +76,7 @@ const suggestionTemplates: SuggestionTemplate[] = [
         id: '4',
         order: 4,
         template_text:
-            'I’m looking for a {{duration}}-day escape that feels <i>refreshing and stress-free</i>, without rushing through too many activities.',
+            "I'm looking for a {{duration}}-day escape that feels *refreshing and stress-free*, without rushing through too many activities.",
         description: 'Duration-first travel intent',
         placeholders: {
             duration: {

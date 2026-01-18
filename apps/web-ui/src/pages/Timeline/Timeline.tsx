@@ -1,24 +1,30 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { TimelineRenderer } from '@components/timeline';
 import TimelineChat from '@components/timeline/TimelineChat';
+import TimelineNotificationsPanel from '@components/timeline/TimelineNotificationsPanel';
+import TimelineSettingsPanel from '@components/timeline/TimelineSettingsPanel';
 import timelineWebSocket from '@services/timelineWebSocket';
 import { TimelineData, CompleteTimelineEvent } from '../../types/websocket.types';
 import './Timeline.css';
 
-interface LocationState {
-    threadId?: string;
-}
+type TabType = 'timeline' | 'chat' | 'notifications' | 'settings';
 
 const Timeline: React.FC = () => {
-    const { travelId } = useParams<{ travelId: string }>();
-    const location = useLocation();
-    const state = location.state as LocationState;
+    const { userId, threadId, travelId } = useParams<{
+        userId?: string;
+        threadId?: string;
+        travelId?: string;
+    }>();
+
+    // Use URL params - support both old (/timeline/:travelId) and new (/:userId/:threadId/timeline) routes
+    const effectiveUserId = userId || 'anonymous';
+    const effectiveThreadId = threadId || travelId || '';
 
     const [timeline, setTimeline] = useState<TimelineData | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'timeline' | 'chat'>('timeline');
+    const [activeTab, setActiveTab] = useState<TabType>('timeline');
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
     // Handle window resize
@@ -33,11 +39,9 @@ const Timeline: React.FC = () => {
 
     // Connect to WebSocket
     useEffect(() => {
-        if (!travelId) return;
+        if (!effectiveThreadId) return;
 
-        const timelineId = travelId;
-
-        timelineWebSocket.connect(timelineId, {
+        timelineWebSocket.connect(effectiveThreadId, {
             onConnect: () => {
                 console.log('Timeline WebSocket connected');
                 setIsConnected(true);
@@ -140,53 +144,65 @@ const Timeline: React.FC = () => {
         return () => {
             timelineWebSocket.disconnect();
         };
-    }, [travelId]);
+    }, [effectiveThreadId]);
 
     const handleTaskComplete = useCallback((taskId: string, nodeId: string) => {
         console.log('Complete task:', taskId, 'in node:', nodeId);
-        // TODO: Send WebSocket event to update task
-    }, []);
-
-    const handleTaskSkip = useCallback((taskId: string, nodeId: string) => {
-        console.log('Skip task:', taskId, 'in node:', nodeId);
-        // TODO: Send WebSocket event to update task
     }, []);
 
     const handleAdditionalInput = useCallback((nodeId: string, value: string) => {
         console.log('Additional input for node:', nodeId, 'value:', value);
-        // TODO: Send chat message with the input
     }, []);
 
     const handleTimelineUpdate = useCallback(() => {
         timelineWebSocket.requestRefresh();
     }, []);
 
-    // Mobile view with tabs
+    // Render tab content
+    const renderTabContent = () => {
+        switch (activeTab) {
+            case 'timeline':
+                return timeline ? (
+                    <TimelineRenderer
+                        data={timeline}
+                        onTaskComplete={handleTaskComplete}
+                        onAdditionalInput={handleAdditionalInput}
+                    />
+                ) : (
+                    <div className="timeline-loading">
+                        <div className="timeline-loading__spinner" />
+                        <p>Loading timeline...</p>
+                    </div>
+                );
+            case 'chat':
+                return (
+                    <TimelineChat
+                        threadId={effectiveThreadId}
+                        onTimelineUpdate={handleTimelineUpdate}
+                    />
+                );
+            case 'notifications':
+                return (
+                    <TimelineNotificationsPanel
+                        userId={effectiveUserId}
+                        threadId={effectiveThreadId}
+                    />
+                );
+            case 'settings':
+                return (
+                    <TimelineSettingsPanel
+                        userId={effectiveUserId}
+                        threadId={effectiveThreadId}
+                        onTimelineUpdate={handleTimelineUpdate}
+                    />
+                );
+        }
+    };
+
+    // Mobile view with bottom navigation
     if (isMobile) {
         return (
             <div className="timeline-page timeline-page--mobile">
-                <div className="timeline-page__tabs">
-                    <button
-                        className={`timeline-page__tab ${activeTab === 'timeline' ? 'timeline-page__tab--active' : ''}`}
-                        onClick={() => setActiveTab('timeline')}
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <polyline points="12 6 12 12 16 14"></polyline>
-                        </svg>
-                        Timeline
-                    </button>
-                    <button
-                        className={`timeline-page__tab ${activeTab === 'chat' ? 'timeline-page__tab--active' : ''}`}
-                        onClick={() => setActiveTab('chat')}
-                    >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                        </svg>
-                        Chat
-                    </button>
-                </div>
-
                 {/* Connection status */}
                 {!isConnected && (
                     <div className="timeline-page__status timeline-page__status--disconnected">
@@ -202,36 +218,57 @@ const Timeline: React.FC = () => {
                 )}
 
                 <div className="timeline-page__content">
-                    {activeTab === 'timeline' && (
-                        <div className="timeline-page__panel">
-                            {timeline ? (
-                                <TimelineRenderer
-                                    data={timeline}
-                                    onTaskComplete={handleTaskComplete}
-                                    onAdditionalInput={handleAdditionalInput}
-                                />
-                            ) : (
-                                <div className="timeline-loading">
-                                    <div className="timeline-loading__spinner" />
-                                    <p>Loading timeline...</p>
-                                </div>
-                            )}
-                        </div>
-                    )}
-                    {activeTab === 'chat' && (
-                        <div className="timeline-page__panel">
-                            <TimelineChat
-                                threadId={state?.threadId || null}
-                                onTimelineUpdate={handleTimelineUpdate}
-                            />
-                        </div>
-                    )}
+                    <div className="timeline-page__panel">
+                        {renderTabContent()}
+                    </div>
                 </div>
+
+                {/* Bottom Navigation */}
+                <nav className="timeline-page__bottom-nav">
+                    <button
+                        className={`timeline-page__nav-item ${activeTab === 'timeline' ? 'timeline-page__nav-item--active' : ''}`}
+                        onClick={() => setActiveTab('timeline')}
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M21.04 12.13C21.18 12.13 21.31 12.19 21.42 12.3L22.7 13.58C22.92 13.79 22.92 14.14 22.7 14.35L21.7 15.35L19.65 13.3L20.65 12.3C20.76 12.19 20.9 12.13 21.04 12.13M19.07 13.88L21.12 15.93L15.06 22H13V19.94L19.07 13.88M11 19L11 13H4V19H11M11 11V5H4V11H11M13 5V11H20V5H13M20 9H13V7H20V9Z" />
+                        </svg>
+                        <span>Timeline</span>
+                    </button>
+                    <button
+                        className={`timeline-page__nav-item ${activeTab === 'chat' ? 'timeline-page__nav-item--active' : ''}`}
+                        onClick={() => setActiveTab('chat')}
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <span>Chat</span>
+                    </button>
+                    <button
+                        className={`timeline-page__nav-item ${activeTab === 'notifications' ? 'timeline-page__nav-item--active' : ''}`}
+                        onClick={() => setActiveTab('notifications')}
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                        </svg>
+                        <span>Notifications</span>
+                    </button>
+                    <button
+                        className={`timeline-page__nav-item ${activeTab === 'settings' ? 'timeline-page__nav-item--active' : ''}`}
+                        onClick={() => setActiveTab('settings')}
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                        </svg>
+                        <span>Settings</span>
+                    </button>
+                </nav>
             </div>
         );
     }
 
-    // Desktop view with split layout
+    // Desktop view with split layout and vertical tabs
     return (
         <div className="timeline-page timeline-page--desktop">
             {/* Connection status */}
@@ -249,6 +286,7 @@ const Timeline: React.FC = () => {
             )}
 
             <div className="timeline-page__split">
+                {/* Left - Timeline */}
                 <div className="timeline-page__left">
                     <div className="timeline-page__panel-header">
                         <h2>Your Travel Timeline</h2>
@@ -277,11 +315,67 @@ const Timeline: React.FC = () => {
                         </div>
                     )}
                 </div>
+
+                {/* Right - Tabbed Panel */}
                 <div className="timeline-page__right">
-                    <TimelineChat
-                        threadId={state?.threadId || null}
-                        onTimelineUpdate={handleTimelineUpdate}
-                    />
+                    {/* Vertical Tabs */}
+                    <div className="timeline-page__vertical-tabs">
+                        <button
+                            className={`timeline-page__vtab ${activeTab === 'chat' ? 'timeline-page__vtab--active' : ''}`}
+                            onClick={() => setActiveTab('chat')}
+                            title="Chat"
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                            </svg>
+                            <span>Chat</span>
+                        </button>
+                        <button
+                            className={`timeline-page__vtab ${activeTab === 'notifications' ? 'timeline-page__vtab--active' : ''}`}
+                            onClick={() => setActiveTab('notifications')}
+                            title="Notifications"
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                            </svg>
+                            <span>Notifications</span>
+                        </button>
+                        <button
+                            className={`timeline-page__vtab ${activeTab === 'settings' ? 'timeline-page__vtab--active' : ''}`}
+                            onClick={() => setActiveTab('settings')}
+                            title="Settings"
+                        >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
+                            <span>Settings</span>
+                        </button>
+                    </div>
+
+                    {/* Tab Content */}
+                    <div className="timeline-page__tab-content">
+                        {activeTab === 'chat' && (
+                            <TimelineChat
+                                threadId={effectiveThreadId}
+                                onTimelineUpdate={handleTimelineUpdate}
+                            />
+                        )}
+                        {activeTab === 'notifications' && (
+                            <TimelineNotificationsPanel
+                                userId={effectiveUserId}
+                                threadId={effectiveThreadId}
+                            />
+                        )}
+                        {activeTab === 'settings' && (
+                            <TimelineSettingsPanel
+                                userId={effectiveUserId}
+                                threadId={effectiveThreadId}
+                                onTimelineUpdate={handleTimelineUpdate}
+                            />
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

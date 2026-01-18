@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import SuggestionCard, { SuggestionCardRef } from '@components/common/SuggestionCard';
 import CustomInputCard from '@components/common/CustomInputCard';
 import { getSuggestionTemplates, SuggestionTemplate } from '@services/suggestionService';
+import chatService from '@services/chatService';
 import './Home.css';
 
 const Home: React.FC = () => {
@@ -11,10 +12,17 @@ const Home: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeSuggestionId, setActiveSuggestionId] = useState<string | null>(null);
   const [completedSuggestionId, setCompletedSuggestionId] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const cardRefs = useRef<Record<string, SuggestionCardRef | null>>({});
+  // Guard against React StrictMode double-mount
+  const hasFetchedRef = useRef(false);
 
   useEffect(() => {
+    // Prevent duplicate fetch from React StrictMode double-mount
+    if (hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
+
     const fetchTemplates = async () => {
       try {
         setLoading(true);
@@ -32,8 +40,20 @@ const Home: React.FC = () => {
     fetchTemplates();
   }, []);
 
-  const handleSubmit = (sentence: string) => {
-    navigate('/chat', { state: { initialMessage: sentence } });
+  const handleSubmit = async (sentence: string) => {
+    if (isSubmitting) return;
+
+    try {
+      setIsSubmitting(true);
+      // Use new API to create chat with initial message
+      const response = await chatService.createNewChat(sentence);
+      // Navigate to new chat room URL
+      navigate(`/${response.user_id}/${response.thread_id}/chat`);
+    } catch (err) {
+      console.error('Failed to create chat:', err);
+      setError('Failed to start chat. Please try again.');
+      setIsSubmitting(false);
+    }
   };
 
   const handleRetry = () => {

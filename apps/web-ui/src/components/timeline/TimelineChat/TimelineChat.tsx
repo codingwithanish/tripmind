@@ -150,6 +150,7 @@ const TimelineChat: React.FC<TimelineChatProps> = ({ threadId, onTimelineUpdate 
                     contextProgress={contextProgress}
                     disabled={isLoading || !threadId}
                     placeholder="Ask a question or add details..."
+                    showPlanningButton={false}
                 />
             </div>
         </div>

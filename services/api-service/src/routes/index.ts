@@ -11,7 +11,7 @@ const router = Router();
 router.use('/auth', authRoutes);
 router.use('/travels', travelRoutes);
 router.use('/chat', chatRoutes);
-router.use('/timelines', timelineRoutes);
+router.use('/timeline', timelineRoutes);
 router.use('/suggestions', suggestionRoutes);
 
 // Health check endpoint

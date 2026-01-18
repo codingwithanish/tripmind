@@ -152,4 +152,158 @@ router.post('/:travelId', (req: Request, res: Response) => {
     });
 });
 
+// ===== NOTIFICATIONS ENDPOINTS =====
+
+// In-memory notifications store
+const timelineNotifications: Map<string, Array<{
+    id: string;
+    severity: 'severe' | 'medium' | 'low';
+    title: string;
+    message: string;
+    created_at: string;
+}>> = new Map();
+
+// Initialize with dummy data
+const initNotifications = (threadId: string) => {
+    if (!timelineNotifications.has(threadId)) {
+        timelineNotifications.set(threadId, [
+            {
+                id: 'notif_1',
+                severity: 'severe',
+                title: 'Visa Application Deadline',
+                message: 'Your visa application deadline is in 3 days. Make sure to submit all required documents.',
+                created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+            },
+            {
+                id: 'notif_2',
+                severity: 'medium',
+                title: 'Flight Price Change',
+                message: 'The flight prices for your selected route have increased by 15%.',
+                created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+            },
+            {
+                id: 'notif_3',
+                severity: 'low',
+                title: 'Weather Update',
+                message: 'The weather forecast for your destination shows sunny conditions during your travel dates.',
+                created_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
+            },
+        ]);
+    }
+    return timelineNotifications.get(threadId)!;
+};
+
+// GET /api/v1/timeline/:userId/:threadId/notifications
+router.get('/:userId/:threadId/notifications', (req: Request, res: Response) => {
+    const { threadId } = req.params;
+    const notifications = initNotifications(threadId);
+
+    res.json({
+        notifications,
+        total: notifications.length
+    });
+});
+
+// DELETE /api/v1/timeline/:userId/:threadId/notifications/:notificationId
+router.delete('/:userId/:threadId/notifications/:notificationId', (req: Request, res: Response) => {
+    const { threadId, notificationId } = req.params;
+    const notifications = initNotifications(threadId);
+    const index = notifications.findIndex(n => n.id === notificationId);
+
+    if (index > -1) {
+        notifications.splice(index, 1);
+        timelineNotifications.set(threadId, notifications);
+    }
+
+    res.json({ success: true });
+});
+
+// ===== SETTINGS / VERSION ENDPOINTS =====
+
+// In-memory versions store
+const timelineVersions: Map<string, Array<{
+    id: string;
+    name: string;
+    created_at: string;
+    is_current: boolean;
+}>> = new Map();
+
+// Initialize with dummy versions
+const initVersions = (threadId: string) => {
+    if (!timelineVersions.has(threadId)) {
+        timelineVersions.set(threadId, [
+            {
+                id: 'v1',
+                name: 'Initial Version',
+                created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                is_current: true,
+            }
+        ]);
+    }
+    return timelineVersions.get(threadId)!;
+};
+
+// GET /api/v1/timeline/:userId/:threadId/versions
+router.get('/:userId/:threadId/versions', (req: Request, res: Response) => {
+    const { threadId } = req.params;
+    const versions = initVersions(threadId);
+
+    res.json({ versions });
+});
+
+// POST /api/v1/timeline/:userId/:threadId/versions - Create new version
+router.post('/:userId/:threadId/versions', (req: Request, res: Response) => {
+    const { threadId } = req.params;
+    const { name } = req.body;
+    const versions = initVersions(threadId);
+
+    // Mark all current as not current
+    versions.forEach(v => v.is_current = false);
+
+    // Create new version
+    const newVersion = {
+        id: `v${versions.length + 1}`,
+        name: name || `Version ${versions.length + 1}`,
+        created_at: new Date().toISOString(),
+        is_current: true,
+    };
+    versions.push(newVersion);
+    timelineVersions.set(threadId, versions);
+
+    res.json({ success: true, version: newVersion });
+});
+
+// PUT /api/v1/timeline/:userId/:threadId/version - Switch version
+router.put('/:userId/:threadId/version', (req: Request, res: Response) => {
+    const { threadId } = req.params;
+    const { version_id } = req.body;
+    const versions = initVersions(threadId);
+
+    versions.forEach(v => v.is_current = v.id === version_id);
+    timelineVersions.set(threadId, versions);
+
+    res.json({ success: true });
+});
+
+// POST /api/v1/timeline/:userId/:threadId/confirm - Confirm timeline
+router.post('/:userId/:threadId/confirm', (req: Request, res: Response) => {
+    const { threadId } = req.params;
+    console.log(`Timeline ${threadId} confirmed`);
+
+    res.json({ success: true, message: 'Timeline confirmed' });
+});
+
+// DELETE /api/v1/timeline/:userId/:threadId - Delete timeline
+router.delete('/:userId/:threadId', (req: Request, res: Response) => {
+    const { threadId } = req.params;
+    console.log(`Timeline ${threadId} deleted`);
+
+    // Clean up data
+    timelineNotifications.delete(threadId);
+    timelineVersions.delete(threadId);
+
+    res.json({ success: true, message: 'Timeline deleted' });
+});
+
 export default router;
+

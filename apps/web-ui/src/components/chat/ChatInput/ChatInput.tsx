@@ -7,6 +7,7 @@ export interface ChatInputProps {
     contextProgress?: number; // 0-100: timeline_context_collected value
     disabled?: boolean;
     placeholder?: string;
+    showPlanningButton?: boolean; // Whether to show the timeline planning button
 }
 
 const ChatInput: React.FC<ChatInputProps> = ({
@@ -14,7 +15,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
     onGenerateTimeline,
     contextProgress = 0,
     disabled = false,
-    placeholder = 'Type your message...'
+    placeholder = 'Type your message...',
+    showPlanningButton = true
 }) => {
     const [message, setMessage] = useState('');
     const isReady = contextProgress >= 100;
@@ -42,19 +44,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
     return (
         <div className="chat-input">
             <div className="chat-input__container">
-                <input
-                    type="text"
-                    className="chat-input__field"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={placeholder}
-                    disabled={disabled}
-                    aria-label="Chat message input"
-                />
-
-                <div className="chat-input__actions">
-                    {/* Planning button - always visible */}
+                {/* Timeline button - LEFT SIDE */}
+                {showPlanningButton && (
                     <button
                         type="button"
                         className={`chat-input__planning-btn ${isReady ? 'chat-input__planning-btn--ready' : ''}`}
@@ -92,21 +83,31 @@ const ChatInput: React.FC<ChatInputProps> = ({
                                 transform="rotate(-90 24 24)"
                             />
                         </svg>
-                        {/* Icon inside */}
+                        {/* mdi:timeline-check icon */}
                         <svg
                             className="chat-input__planning-icon"
                             width="24"
                             height="24"
                             viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
+                            fill="currentColor"
                         >
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <polyline points="12 6 12 12 16 14"></polyline>
+                            <path d="M21.04 12.13C21.18 12.13 21.31 12.19 21.42 12.3L22.7 13.58C22.92 13.79 22.92 14.14 22.7 14.35L21.7 15.35L19.65 13.3L20.65 12.3C20.76 12.19 20.9 12.13 21.04 12.13M19.07 13.88L21.12 15.93L15.06 22H13V19.94L19.07 13.88M11 19L11 13H4V19H11M11 11V5H4V11H11M13 5V11H20V5H13M20 9H13V7H20V9Z" />
                         </svg>
                     </button>
+                )}
 
+                <input
+                    type="text"
+                    className="chat-input__field"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={placeholder}
+                    disabled={disabled}
+                    aria-label="Chat message input"
+                />
+
+                <div className="chat-input__actions">
                     <button
                         type="button"
                         className="chat-input__send-btn"
@@ -126,4 +127,3 @@ const ChatInput: React.FC<ChatInputProps> = ({
 };
 
 export default ChatInput;
-

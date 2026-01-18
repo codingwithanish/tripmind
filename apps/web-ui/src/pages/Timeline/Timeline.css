@@ -78,11 +78,59 @@
 }
 
 .timeline-page__right {
-    width: 400px;
+    width: 420px;
     flex-shrink: 0;
     display: flex;
-    flex-direction: column;
     overflow: hidden;
+}
+
+/* Vertical Tabs */
+.timeline-page__vertical-tabs {
+    display: flex;
+    flex-direction: column;
+    width: 60px;
+    background: var(--bg-primary);
+    border-left: 1px solid var(--border-color);
+    order: 2;
+}
+
+.timeline-page__vtab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: var(--spacing-md) var(--spacing-sm);
+    background: transparent;
+    border: none;
+    border-left: 3px solid transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.timeline-page__vtab span {
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.timeline-page__vtab:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.timeline-page__vtab--active {
+    background: var(--bg-secondary);
+    border-left-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.timeline-page__tab-content {
+    flex: 1;
+    overflow: hidden;
+    order: 1;
+    background: var(--bg-primary);
 }
 
 .timeline-page__panel-header {
@@ -104,51 +152,11 @@
     color: var(--text-secondary);
 }
 
-/* Mobile Tabbed Layout */
+/* Mobile Layout with Bottom Navigation */
 .timeline-page--mobile {
     display: flex;
     flex-direction: column;
     height: calc(100vh - 56px);
-}
-
-.timeline-page__tabs {
-    display: flex;
-    background: var(--bg-primary);
-    border-bottom: 1px solid var(--border-color);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.timeline-page__tab {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-md);
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid transparent;
-    font-size: var(--text-sm);
-    font-weight: var(--font-medium);
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all var(--transition-base);
-}
-
-.timeline-page__tab:hover {
-    color: var(--text-primary);
-    background: var(--bg-tertiary);
-}
-
-.timeline-page__tab--active {
-    color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
-}
-
-.timeline-page__tab svg {
-    flex-shrink: 0;
 }
 
 .timeline-page__content {
@@ -161,16 +169,56 @@
     overflow: hidden;
 }
 
+/* Bottom Navigation */
+.timeline-page__bottom-nav {
+    display: flex;
+    background: var(--bg-primary);
+    border-top: 1px solid var(--border-color);
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.timeline-page__nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: var(--spacing-sm) var(--spacing-xs);
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.timeline-page__nav-item span {
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.timeline-page__nav-item:hover {
+    color: var(--text-secondary);
+}
+
+.timeline-page__nav-item--active {
+    color: var(--color-primary);
+}
+
+.timeline-page__nav-item--active svg {
+    transform: scale(1.1);
+}
+
 /* Responsive Adjustments */
 @media (max-width: 1024px) {
     .timeline-page__right {
-        width: 350px;
+        width: 380px;
     }
 }
 
 @media (max-width: 900px) {
     .timeline-page__right {
-        width: 320px;
+        width: 340px;
     }
 }
 
@@ -236,4 +284,24 @@
 .timeline-page__error p {
     margin: 0;
     font-size: var(--text-sm);
+}
+
+/* Timeline Loading */
+.timeline-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: var(--spacing-md);
+    color: var(--text-tertiary);
+}
+
+.timeline-loading__spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
