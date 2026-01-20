@@ -5,7 +5,7 @@ import TimelineChat from '@components/timeline/TimelineChat';
 import TimelineNotificationsPanel from '@components/timeline/TimelineNotificationsPanel';
 import TimelineSettingsPanel from '@components/timeline/TimelineSettingsPanel';
 import timelineWebSocket from '@services/timelineWebSocket';
-import { TimelineData, CompleteTimelineEvent } from '../../types/websocket.types';
+import { TimelineData, TimelineNode, CompleteTimelineEvent } from '../../types/websocket.types';
 import './Timeline.css';
 
 type TabType = 'timeline' | 'chat' | 'notifications' | 'settings';
@@ -26,6 +26,7 @@ const Timeline: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<TabType>('chat');
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+    const [helpContextNode, setHelpContextNode] = useState<TimelineNode | null>(null);
 
     // Handle window resize
     useEffect(() => {
@@ -158,6 +159,21 @@ const Timeline: React.FC = () => {
         timelineWebSocket.requestRefresh();
     }, []);
 
+    // Handle help request from timeline - pass node to chat
+    const handleHelpRequest = useCallback((nodeId: string) => {
+        if (!timeline) return;
+        const node = timeline.nodes.find(n => n.id === nodeId);
+        if (node) {
+            setHelpContextNode(node);
+            setActiveTab('chat'); // Switch to chat tab
+        }
+    }, [timeline]);
+
+    const handleContextCardHandled = useCallback(() => {
+        // Clear the context node after it's been handled by chat
+        setHelpContextNode(null);
+    }, []);
+
     // Render tab content
     const renderTabContent = () => {
         switch (activeTab) {
@@ -167,6 +183,7 @@ const Timeline: React.FC = () => {
                         data={timeline}
                         onTaskComplete={handleTaskComplete}
                         onAdditionalInput={handleAdditionalInput}
+                        onHelpRequest={handleHelpRequest}
                     />
                 ) : (
                     <div className="timeline-loading">
@@ -178,6 +195,8 @@ const Timeline: React.FC = () => {
                 return (
                     <TimelineChat
                         threadId={effectiveThreadId}
+                        contextCard={helpContextNode}
+                        onContextCardHandled={handleContextCardHandled}
                         onTimelineUpdate={handleTimelineUpdate}
                     />
                 );
@@ -307,6 +326,7 @@ const Timeline: React.FC = () => {
                             data={timeline}
                             onTaskComplete={handleTaskComplete}
                             onAdditionalInput={handleAdditionalInput}
+                            onHelpRequest={handleHelpRequest}
                         />
                     ) : (
                         <div className="timeline-loading">
@@ -359,6 +379,8 @@ const Timeline: React.FC = () => {
                         {activeTab === 'chat' && (
                             <TimelineChat
                                 threadId={effectiveThreadId}
+                                contextCard={helpContextNode}
+                                onContextCardHandled={handleContextCardHandled}
                                 onTimelineUpdate={handleTimelineUpdate}
                             />
                         )}

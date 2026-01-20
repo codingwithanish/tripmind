@@ -2,22 +2,33 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import ChatMessage from '@components/chat/ChatMessage';
 import SuggestionChips from '@components/chat/SuggestionChips';
 import ChatInput from '@components/chat/ChatInput';
+import ActionCardMessage from '@components/chat/ActionCardMessage';
 import chatService, { StreamedMessage } from '@services/chatService';
+import type { TimelineNode } from '../../../types/websocket.types';
 import './TimelineChat.css';
 
 interface ChatMessageItem {
     id: string;
-    content: string;
-    sender: 'user' | 'bot';
+    type: 'text' | 'action_card';
+    content?: string;
+    node?: TimelineNode;
+    sender: 'user' | 'bot' | 'context';
     timestamp: string;
 }
 
 export interface TimelineChatProps {
     threadId: string | null;
+    contextCard?: TimelineNode | null;
+    onContextCardHandled?: () => void;
     onTimelineUpdate?: () => void;
 }
 
-const TimelineChat: React.FC<TimelineChatProps> = ({ threadId, onTimelineUpdate }) => {
+const TimelineChat: React.FC<TimelineChatProps> = ({
+    threadId,
+    contextCard,
+    onContextCardHandled,
+    onTimelineUpdate
+}) => {
     const [messages, setMessages] = useState<ChatMessageItem[]>([]);
     const [suggestions, setSuggestions] = useState<string[]>([]);
     const [contextProgress, setContextProgress] = useState(100); // Already at 100% on timeline page
@@ -25,6 +36,7 @@ const TimelineChat: React.FC<TimelineChatProps> = ({ threadId, onTimelineUpdate 
     const [error, setError] = useState<string | null>(null);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const lastContextCardId = useRef<string | null>(null);
 
     // Scroll to bottom when messages change
     const scrollToBottom = useCallback(() => {
@@ -35,12 +47,38 @@ const TimelineChat: React.FC<TimelineChatProps> = ({ threadId, onTimelineUpdate 
         scrollToBottom();
     }, [messages, scrollToBottom]);
 
+    // Handle context card changes - add card to messages when new card arrives
+    useEffect(() => {
+        if (contextCard && contextCard.id !== lastContextCardId.current) {
+            lastContextCardId.current = contextCard.id;
+
+            const cardMessage: ChatMessageItem = {
+                id: `context-${Date.now()}`,
+                type: 'action_card',
+                node: contextCard,
+                sender: 'context',
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            };
+
+            setMessages(prev => [...prev, cardMessage]);
+            setSuggestions([
+                'What are my options for this?',
+                'Can you find cheaper alternatives?',
+                'What should I know before booking?',
+            ]);
+
+            // Notify parent that we've handled the context card
+            onContextCardHandled?.();
+        }
+    }, [contextCard, onContextCardHandled]);
+
     // Handle streamed messages
     const handleStreamedMessage = useCallback((streamedMsg: StreamedMessage) => {
         switch (streamedMsg.type) {
             case 'chat_response':
                 const botMessage: ChatMessageItem = {
                     id: `bot-${Date.now()}-${Math.random()}`,
+                    type: 'text',
                     content: streamedMsg.content,
                     sender: 'bot',
                     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -66,6 +104,7 @@ const TimelineChat: React.FC<TimelineChatProps> = ({ threadId, onTimelineUpdate 
 
         const userMessage: ChatMessageItem = {
             id: `user-${Date.now()}`,
+            type: 'text',
             content,
             sender: 'user',
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -100,6 +139,8 @@ const TimelineChat: React.FC<TimelineChatProps> = ({ threadId, onTimelineUpdate 
         handleSendMessage(suggestion);
     };
 
+    const hasContent = messages.length > 0 || error;
+
     return (
         <div className="timeline-chat">
             <div className="timeline-chat__header">
@@ -108,7 +149,7 @@ const TimelineChat: React.FC<TimelineChatProps> = ({ threadId, onTimelineUpdate 
             </div>
 
             <div className="timeline-chat__messages">
-                {messages.length === 0 && !error && (
+                {!hasContent && (
                     <div className="timeline-chat__empty">
                         <p>Ask questions or provide more details to refine your travel plan.</p>
                     </div>
@@ -121,12 +162,16 @@ const TimelineChat: React.FC<TimelineChatProps> = ({ threadId, onTimelineUpdate 
                 )}
 
                 {messages.map((msg) => (
-                    <ChatMessage
-                        key={msg.id}
-                        content={msg.content}
-                        sender={msg.sender}
-                        timestamp={msg.timestamp}
-                    />
+                    msg.type === 'action_card' && msg.node ? (
+                        <ActionCardMessage key={msg.id} node={msg.node} />
+                    ) : (
+                        <ChatMessage
+                            key={msg.id}
+                            content={msg.content || ''}
+                            sender={msg.sender === 'context' ? 'bot' : msg.sender}
+                            timestamp={msg.timestamp}
+                        />
+                    )
                 ))}
 
                 {isLoading && messages.length > 0 && (
@@ -158,3 +203,4 @@ const TimelineChat: React.FC<TimelineChatProps> = ({ threadId, onTimelineUpdate 
 };
 
 export default TimelineChat;
+
