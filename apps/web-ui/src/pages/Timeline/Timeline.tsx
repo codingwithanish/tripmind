@@ -24,7 +24,7 @@ const Timeline: React.FC = () => {
     const [timeline, setTimeline] = useState<TimelineData | null>(null);
     const [isConnected, setIsConnected] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<TabType>('timeline');
+    const [activeTab, setActiveTab] = useState<TabType>('chat');
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
     // Handle window resize

@@ -41,11 +41,10 @@ api.interceptors.response.use(
       const apiError = error.response.data;
 
       // Handle 401 Unauthorized
+      // Note: We no longer auto-redirect on 401 to allow demo mode with hardcoded credentials
+      // Individual pages should handle auth errors as needed
       if (error.response.status === 401) {
-        // Clear token and redirect to login
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+        console.warn('API returned 401 Unauthorized:', apiError);
       }
 
       return Promise.reject(apiError);

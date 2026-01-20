@@ -1,19 +1,27 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '@types/user.types';
-import { IAuthContext } from '@/interfaces/IUser';
-import authService from '@services/authService';
-import { getLocalStorage, setLocalStorage, removeLocalStorage } from '@utils/helpers';
 import { STORAGE_KEYS } from '@utils/constants';
 
-const AuthContext = createContext<IAuthContext | undefined>(undefined);
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+// Hardcoded credentials
+const VALID_CREDENTIALS = {
+  email: 'user@tripmind.com',
+  password: 'tripmind123',
 };
+
+interface User {
+  id: string;
+  email: string;
+  name: string;
+}
+
+interface AuthContextType {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -21,92 +29,73 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize auth state from localStorage
   useEffect(() => {
-    const initializeAuth = () => {
-      const storedToken = getLocalStorage<string>(STORAGE_KEYS.TOKEN);
-      const storedUser = getLocalStorage<User>(STORAGE_KEYS.USER);
-
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(storedUser);
+    // Check for existing session in localStorage
+    const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        localStorage.removeItem(STORAGE_KEYS.USER);
       }
-
-      setIsLoading(false);
-    };
-
-    initializeAuth();
+    }
+    setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
-    try {
-      const response = await authService.login({ email, password });
-      setToken(response.token);
-      setUser(response.user);
-      setLocalStorage(STORAGE_KEYS.TOKEN, response.token);
-      setLocalStorage(STORAGE_KEYS.USER, response.user);
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    setIsLoading(true);
+
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    if (email === VALID_CREDENTIALS.email && password === VALID_CREDENTIALS.password) {
+      const loggedInUser: User = {
+        id: '1',
+        email: VALID_CREDENTIALS.email,
+        name: 'TripMind User',
+      };
+      // Store a mock token for API requests
+      const mockToken = 'demo-token-' + Date.now();
+      localStorage.setItem(STORAGE_KEYS.TOKEN, mockToken);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(loggedInUser));
+      setUser(loggedInUser);
+      setIsLoading(false);
+      return { success: true };
     }
-  };
 
-  const register = async (email: string, password: string, name: string) => {
-    try {
-      const response = await authService.register({ email, password, name });
-      setToken(response.token);
-      setUser(response.user);
-      setLocalStorage(STORAGE_KEYS.TOKEN, response.token);
-      setLocalStorage(STORAGE_KEYS.USER, response.user);
-    } catch (error) {
-      console.error('Register error:', error);
-      throw error;
-    }
-  };
-
-  const loginWithGoogle = async () => {
-    authService.loginWithGoogle();
-  };
-
-  const loginWithFacebook = async () => {
-    authService.loginWithFacebook();
+    setIsLoading(false);
+    return { success: false, error: 'Invalid email or password' };
   };
 
   const logout = () => {
-    setToken(null);
     setUser(null);
-    removeLocalStorage(STORAGE_KEYS.TOKEN);
-    removeLocalStorage(STORAGE_KEYS.USER);
+    localStorage.removeItem(STORAGE_KEYS.TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER);
   };
 
-  const updateProfile = async (data: Partial<User>) => {
-    try {
-      const updatedUser = await authService.updateProfile(data);
-      setUser(updatedUser);
-      setLocalStorage(STORAGE_KEYS.USER, updatedUser);
-    } catch (error) {
-      console.error('Update profile error:', error);
-      throw error;
-    }
-  };
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        login,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
-  const value: IAuthContext = {
-    user,
-    token,
-    isAuthenticated: !!user && !!token,
-    isLoading,
-    login,
-    register,
-    loginWithGoogle,
-    loginWithFacebook,
-    logout,
-    updateProfile,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };
 
 export default AuthContext;

@@ -1,223 +1,267 @@
 import { Server, Socket } from 'socket.io';
 import crypto from 'crypto';
 
-// Generate dummy timeline data with updated structure
-// Node types: start, end, action, representation, additional_input
-// - action: contains tasks and/or recommendations arrays
-// - representation: contains single representation object (contextual info)
-// - additional_input: contains single additional_input object (blocking)
+// Generate dummy timeline data matching frontend's websocket.types.ts
+// Node types: 'start' | 'end' | 'task_node' | 'representation_node'
+// - task_node: contains tasks[], recommendations[] with title, title_image, description, price
+// - representation_node: contains representations[] with id, title, description, icon
 const generateDummyTimeline = (timelineId: string) => {
-    const startNodeId = crypto.randomUUID();
-    const endNodeId = crypto.randomUUID();
-
     return {
         timeline_id: timelineId,
         version: 1,
         style: 'default',
         configs: {
-            display_price_unit: 'USD',
-            timezone: 'America/New_York',
+            display_price_unit: 'INR',
+            timezone: 'Asia/Kolkata',
         },
         nodes: [
             // Start node
             {
-                id: startNodeId,
+                id: crypto.randomUUID(),
                 node_version: 1,
                 order: 0,
                 type: 'start',
                 subtype: null,
                 display_date: null,
             },
-            // Representation node - contextual info (weather)
+            // Task node 1 - Flight booking
             {
                 id: crypto.randomUUID(),
                 node_version: 1,
                 order: 1,
-                type: 'representation',
-                subtype: 'weather',
+                type: 'task_node',
+                subtype: 'default',
                 display_date: {
-                    type: 'date',
-                    label: 'Jan 17',
-                    start: '2026-01-17T00:00:00Z',
+                    type: 'date_range',
+                    label: 'Jan 12 - Jan 16',
+                    start: '2026-01-12T12:30:00Z',
+                    end: '2026-01-16T01:30:00Z',
                 },
-                representation: {
-                    id: crypto.randomUUID(),
-                    title: 'Weather Update',
-                    description: 'Expected sunny weather with temperatures around 75°F. Perfect for outdoor activities!',
-                    image: 'https://images.unsplash.com/photo-1601297183305-6df142704ea2?w=200',
-                    icon: 'sun',
-                },
+                tasks: [
+                    {
+                        id: crypto.randomUUID(),
+                        execution_state: 'pending',
+                        visit_status: 'no_action',
+                        priority: 1,
+                        title: 'Book your flight from COK to SYD',
+                        title_image: 'mdi:airplane-takeoff',
+                        description: 'IndiGo 6E-2034, Departure 6:00 AM on 23 Jan',
+                        price: {
+                            type: 'range',
+                            unit: 'INR',
+                            range: { min: 45000, max: 52000 },
+                        },
+                    },
+                    {
+                        id: crypto.randomUUID(),
+                        execution_state: 'pending',
+                        visit_status: 'no_action',
+                        priority: 2,
+                        title: 'Book hotel at Sydney Harbour for 4 nights',
+                        title_image: 'mdi:bed',
+                        description: 'Sydney Harbour Marriott, Check-in: Jan 24',
+                        price: {
+                            type: 'range',
+                            unit: 'INR',
+                            range: { min: 45000, max: 52000 },
+                        },
+                    },
+                ],
+                recommendations: [
+                    {
+                        id: crypto.randomUUID(),
+                        action_state: 'suggested',
+                        type: 'place',
+                        priority: 1,
+                        title: 'Visit Sydney Opera House for a guided tour',
+                        title_image: 'mdi:camera',
+                        description: 'Tours run hourly, advance booking recommended',
+                        price_included: true,
+                        price_info: {
+                            type: 'confirmed',
+                            unit: 'AUD',
+                            confirmed_price: 42,
+                        },
+                    },
+                    {
+                        id: crypto.randomUUID(),
+                        action_state: 'suggested',
+                        type: 'restaurant',
+                        priority: 2,
+                        title: 'Try the famous Sydney Fish Market',
+                        title_image: 'mdi:food',
+                        description: 'Open daily 7AM-4PM, Pyrmont area',
+                        price_included: true,
+                        price_info: {
+                            type: 'range',
+                            unit: 'AUD',
+                            range: { min: 50, max: 100 },
+                        },
+                    },
+                ],
             },
-            // Action node with tasks and recommendations
+            // Representation node 1 - Weather info (low severity)
             {
                 id: crypto.randomUUID(),
                 node_version: 1,
                 order: 2,
-                type: 'action',
+                type: 'representation_node',
+                subtype: null,
+                display_date: {
+                    type: 'date',
+                    label: 'Jan 16',
+                    start: '2026-01-16T00:00:00Z',
+                },
+                representations: [
+                    {
+                        id: crypto.randomUUID(),
+                        title: 'Weather Advisory',
+                        description: 'Last year, the temperature at this time dropped to around –1°C, so please be prepared with warm clothing.',
+                        icon: 'mdi:weather-sunny',
+                    },
+                ],
+            },
+            // Task node 2 - Road trip
+            {
+                id: crypto.randomUUID(),
+                node_version: 1,
+                order: 3,
+                type: 'task_node',
                 subtype: 'default',
+                display_date: {
+                    type: 'date',
+                    label: 'Jan 17',
+                    start: '2026-01-17T09:00:00Z',
+                },
+                tasks: [
+                    {
+                        id: crypto.randomUUID(),
+                        execution_state: 'pending',
+                        visit_status: 'no_action',
+                        priority: 1,
+                        title: 'Rent a car for Blue Mountains day trip',
+                        title_image: 'mdi:car-side',
+                        description: 'Pick up from Sydney CBD, return same day',
+                        price: {
+                            type: 'range',
+                            unit: 'AUD',
+                            range: { min: 120, max: 180 },
+                        },
+                    },
+                ],
+                recommendations: [
+                    {
+                        id: crypto.randomUUID(),
+                        action_state: 'suggested',
+                        type: 'place',
+                        priority: 1,
+                        title: 'Visit Three Sisters lookout point',
+                        title_image: 'mdi:binoculars',
+                        description: 'Best views in early morning, free entry',
+                        price_included: false,
+                    },
+                ],
+            },
+            // Representation node 2 - Traffic warning (medium severity)
+            {
+                id: crypto.randomUUID(),
+                node_version: 1,
+                order: 4,
+                type: 'representation_node',
+                subtype: null,
                 display_date: {
                     type: 'date',
                     label: 'Jan 17',
                     start: '2026-01-17T00:00:00Z',
                 },
-                tasks: [
+                representations: [
                     {
                         id: crypto.randomUUID(),
-                        execution_state: 'pending',
-                        visit_status: null,
-                        priority: 1,
-                        title: 'Book Flight Tickets',
-                        title_image: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=200',
-                        description: 'Round-trip flight from NYC to destination',
-                        price: {
-                            type: 'range',
-                            unit: 'USD',
-                            price_range: { min: 450, max: 650 },
-                        },
-                    },
-                ],
-                recommendations: [
-                    {
-                        id: crypto.randomUUID(),
-                        action_state: 'suggested',
-                        type: 'flight',
-                        priority: 1,
-                        title: 'Delta Airlines - Direct Flight',
-                        title_image: 'https://images.unsplash.com/photo-1569629743817-70d8db6c323b?w=200',
-                        description: 'Non-stop flight, 4h 30m duration. Includes 1 checked bag.',
-                        price_included: true,
-                        price_info: {
-                            type: 'constant',
-                            unit: 'USD',
-                            value: 520,
-                        },
-                    },
-                    {
-                        id: crypto.randomUUID(),
-                        action_state: 'suggested',
-                        type: 'flight',
-                        priority: 2,
-                        title: 'United Airlines - 1 Stop',
-                        title_image: 'https://images.unsplash.com/photo-1540339832862-474599807836?w=200',
-                        description: '6h 15m with layover in Chicago. Budget-friendly option.',
-                        price_included: true,
-                        price_info: {
-                            type: 'constant',
-                            unit: 'USD',
-                            value: 380,
-                        },
+                        title: 'Traffic Warning',
+                        description: 'Traffic congestion expected on Highway 101. Consider alternative routes or adjust departure time.',
+                        icon: 'mdi:alert',
                     },
                 ],
             },
-            // Action node with multiple tasks
-            {
-                id: crypto.randomUUID(),
-                node_version: 1,
-                order: 3,
-                type: 'action',
-                subtype: 'default',
-                display_date: {
-                    type: 'date_range',
-                    label: 'Jan 17 - Jan 24',
-                    start: '2026-01-17T00:00:00Z',
-                    end: '2026-01-24T00:00:00Z',
-                },
-                tasks: [
-                    {
-                        id: crypto.randomUUID(),
-                        execution_state: 'pending',
-                        visit_status: null,
-                        priority: 1,
-                        title: 'Book Accommodation',
-                        title_image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=200',
-                        description: 'Hotel in city center, 7 nights',
-                        price: {
-                            type: 'range',
-                            unit: 'USD',
-                            price_range: { min: 700, max: 1200 },
-                        },
-                    },
-                    {
-                        id: crypto.randomUUID(),
-                        execution_state: 'completed',
-                        visit_status: 'confirmed',
-                        priority: 2,
-                        title: 'Travel Insurance',
-                        title_image: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?w=200',
-                        description: 'Comprehensive coverage for international travel',
-                        price: {
-                            type: 'confirmed',
-                            unit: 'USD',
-                            confirmed_price: 85,
-                        },
-                    },
-                ],
-                recommendations: [
-                    {
-                        id: crypto.randomUUID(),
-                        action_state: 'suggested',
-                        type: 'hotel',
-                        priority: 1,
-                        title: 'Grand Plaza Hotel',
-                        title_image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=200',
-                        description: '4-star hotel, breakfast included, city center location',
-                        price_included: true,
-                        price_info: {
-                            type: 'range',
-                            unit: 'USD',
-                            range: { min: 120, max: 180 },
-                        },
-                    },
-                ],
-            },
-            // Additional input node (BLOCKING - nodes after this won't render until answered)
-            {
-                id: crypto.randomUUID(),
-                node_version: 1,
-                order: 4,
-                type: 'additional_input',
-                subtype: null,
-                display_date: null,
-                additional_input: {
-                    id: crypto.randomUUID(),
-                    question: 'What kind of activities do you prefer for your trip?',
-                    response_type: 'text',
-                    placeholder: 'Type your preferences...',
-                    is_required: true,
-                },
-            },
-            // Action node - tasks only (won't render until additional_input is completed)
+            // Representation node 3 - Passport urgent (high severity)
             {
                 id: crypto.randomUUID(),
                 node_version: 1,
                 order: 5,
-                type: 'action',
-                subtype: 'tasks_only',
+                type: 'representation_node',
+                subtype: null,
                 display_date: {
-                    type: 'time',
-                    label: '2:00 PM',
-                    start: '2026-01-18T14:00:00Z',
+                    type: 'date',
+                    label: 'Jan 18',
+                    start: '2026-01-18T00:00:00Z',
+                },
+                representations: [
+                    {
+                        id: crypto.randomUUID(),
+                        title: 'Urgent: Passport Renewal Required',
+                        description: 'Important: Passport renewal required before Jan 20. Visit the nearest embassy immediately to avoid travel disruption.',
+                        icon: 'mdi:alert-octagon',
+                    },
+                ],
+            },
+            // Task node 3 - Sydney Harbour activities
+            {
+                id: crypto.randomUUID(),
+                node_version: 1,
+                order: 6,
+                type: 'task_node',
+                subtype: 'default',
+                display_date: {
+                    type: 'date',
+                    label: 'Jan 18',
+                    start: '2026-01-18T10:00:00Z',
                 },
                 tasks: [
                     {
                         id: crypto.randomUUID(),
-                        execution_state: 'pending',
-                        visit_status: null,
+                        execution_state: 'completed',
+                        visit_status: 'confirmed',
                         priority: 1,
-                        title: 'City Walking Tour',
-                        title_image: 'https://images.unsplash.com/photo-1569959220744-ff553533f492?w=200',
-                        description: 'Guided tour of historic downtown area',
+                        title: 'Take a ferry ride across Sydney Harbour',
+                        title_image: 'mdi:ferry',
+                        description: 'Circular Quay to Manly Beach',
                         price: {
                             type: 'confirmed',
-                            unit: 'USD',
-                            confirmed_price: 45,
+                            unit: 'AUD',
+                            confirmed_price: 9.20,
                         },
+                    },
+                    {
+                        id: crypto.randomUUID(),
+                        execution_state: 'pending',
+                        visit_status: 'no_action',
+                        priority: 2,
+                        title: 'Sydney Harbour Bridge Climb',
+                        title_image: 'mdi:bridge',
+                        description: '3.5 hour guided climb experience',
+                        price: {
+                            type: 'confirmed',
+                            unit: 'AUD',
+                            confirmed_price: 388,
+                        },
+                    },
+                ],
+                recommendations: [
+                    {
+                        id: crypto.randomUUID(),
+                        action_state: 'suggested',
+                        type: 'place',
+                        priority: 1,
+                        title: 'Relax at Bondi Beach',
+                        title_image: 'mdi:beach',
+                        description: 'Iconic Australian beach, great for surfing',
+                        price_included: false,
                     },
                 ],
             },
             // End node
             {
-                id: endNodeId,
+                id: crypto.randomUUID(),
                 node_version: 1,
                 order: 99,
                 type: 'end',
