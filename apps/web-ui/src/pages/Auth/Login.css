@@ -256,3 +256,82 @@
         color: #f1f5f9;
     }
 }
+
+/* OAuth Separator */
+.login-divider {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin: 0.5rem 0;
+}
+
+.login-divider-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border-color, #e2e8f0);
+}
+
+.login-divider-text {
+    font-size: 0.8rem;
+    color: var(--text-tertiary, #94a3b8);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Google Sign-in Button */
+.google-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.875rem 1rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary, #1a1a2e);
+    background: var(--surface-primary, #ffffff);
+    border: 1px solid var(--border-color, #e2e8f0);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.google-button:hover:not(:disabled) {
+    background: var(--surface-secondary, #f8fafc);
+    border-color: #d1d5db;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.google-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.google-button svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Error icon modifier */
+.login-icon--error {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+/* Dark mode additions */
+@media (prefers-color-scheme: dark) {
+    .login-divider-line {
+        background: #3a3a4e;
+    }
+
+    .google-button {
+        background: #2a2a3e;
+        border-color: #3a3a4e;
+        color: #f1f5f9;
+    }
+
+    .google-button:hover:not(:disabled) {
+        background: #353548;
+        border-color: #4a4a5e;
+    }
+}

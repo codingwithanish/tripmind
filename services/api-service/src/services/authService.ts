@@ -1,45 +1,57 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { env } from '@config/env';
-import { IUser, JWTPayload } from '../types/user.types';
+import { userDao, memberDao, SafeUser } from '../database/dao';
+import { AuthProvider, UserStatus } from '@prisma/client';
 
-// Dummy user database
-const users: IUser[] = [
-  {
-    id: '1',
-    email: 'demo@tripmind.com',
-    name: 'Demo User',
-    password: bcrypt.hashSync('password123', 10), // hashed password
-    authProvider: 'local',
-    role: 'user',
-    avatar: 'https://via.placeholder.com/150',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
+/**
+ * JWT Payload structure
+ */
+export interface JWTPayload {
+  userEmail: string;
+  role: string;
+  iat?: number;
+  exp?: number;
+}
+
+/**
+ * Login response structure
+ */
+export interface AuthResponse {
+  user: SafeUser;
+  token: string;
+}
 
 class AuthService {
   /**
    * Login user with email and password
    */
-  async login(email: string, password: string): Promise<{ user: Omit<IUser, 'password'>; token: string }> {
-    const user = users.find((u) => u.email === email);
+  async login(email: string, password: string): Promise<AuthResponse> {
+    // Find user with password hash included
+    const user = await userDao.findByEmail(email);
 
-    if (!user || !user.password) {
+    if (!user || !user.passwordHash) {
       throw new Error('Invalid credentials');
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // Check if user is active
+    if (user.status !== 'active') {
+      throw new Error(`Account is ${user.status}`);
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
 
     if (!isPasswordValid) {
       throw new Error('Invalid credentials');
     }
 
-    const token = this.generateToken(user);
-    const { password: _, ...userWithoutPassword } = user;
+    const token = this.generateToken(user.email, user.role);
+
+    // Return user without password
+    const { passwordHash: _, ...safeUser } = user;
 
     return {
-      user: userWithoutPassword,
+      user: safeUser,
       token,
     };
   }
@@ -47,79 +59,170 @@ class AuthService {
   /**
    * Register new user
    */
-  async register(email: string, password: string, name: string): Promise<{ user: Omit<IUser, 'password'>; token: string }> {
+  async register(
+    email: string,
+    password: string,
+    name: string
+  ): Promise<AuthResponse> {
     // Check if user already exists
-    if (users.find((u) => u.email === email)) {
+    const exists = await userDao.exists(email);
+    if (exists) {
       throw new Error('User already exists');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser: IUser = {
-      id: String(users.length + 1),
+    // Create user
+    const user = await userDao.create({
       email,
       name,
-      password: hashedPassword,
+      passwordHash: hashedPassword,
       authProvider: 'local',
-      role: 'user',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+    });
 
-    users.push(newUser);
+    // Create primary member for the user
+    await memberDao.createPrimaryMember(email, name);
 
-    const token = this.generateToken(newUser);
-    const { password: _, ...userWithoutPassword } = newUser;
+    const token = this.generateToken(user.email, user.role);
 
     return {
-      user: userWithoutPassword,
+      user,
       token,
     };
   }
 
   /**
-   * Get user by ID
+   * Login or register with OAuth provider
    */
-  async getUserById(userId: string): Promise<Omit<IUser, 'password'> | null> {
-    const user = users.find((u) => u.id === userId);
+  async oauthLogin(
+    provider: AuthProvider,
+    providerId: string,
+    email: string,
+    name: string,
+    avatar?: string
+  ): Promise<AuthResponse> {
+    // Try to find existing user by provider
+    let user = await userDao.findByAuthProvider(provider, providerId);
 
-    if (!user) {
-      return null;
+    if (user) {
+      // User exists, check status
+      if (user.status !== 'active') {
+        throw new Error(`Account is ${user.status}`);
+      }
+
+      const { passwordHash: _, ...safeUser } = user;
+      const token = this.generateToken(user.email, user.role);
+
+      return { user: safeUser, token };
     }
 
-    const { password: _, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    // Check if email already exists with different provider
+    const existingByEmail = await userDao.findByEmail(email);
+    if (existingByEmail) {
+      throw new Error('Email already registered with different provider');
+    }
+
+    // Create new user with OAuth
+    const newUser = await userDao.create({
+      email,
+      name,
+      authProvider: provider,
+      authProviderId: providerId,
+    });
+
+    // Create primary member with avatar
+    const member = await memberDao.createPrimaryMember(email, name);
+    if (avatar) {
+      await memberDao.update(member.id, { avatar });
+    }
+
+    const token = this.generateToken(newUser.email, newUser.role);
+
+    return { user: newUser, token };
+  }
+
+  /**
+   * Get user by email
+   */
+  async getUserByEmail(email: string): Promise<SafeUser | null> {
+    return userDao.findByEmailSafe(email);
+  }
+
+  /**
+   * Get user with members
+   */
+  async getUserWithMembers(email: string) {
+    return userDao.findWithMembers(email);
   }
 
   /**
    * Update user profile
    */
-  async updateProfile(userId: string, updates: Partial<IUser>): Promise<Omit<IUser, 'password'>> {
-    const userIndex = users.findIndex((u) => u.id === userId);
+  async updateProfile(
+    email: string,
+    updates: { name?: string; phoneNumber?: string }
+  ): Promise<SafeUser> {
+    return userDao.update(email, updates);
+  }
 
-    if (userIndex === -1) {
-      throw new Error('User not found');
+  /**
+   * Change password
+   */
+  async changePassword(
+    email: string,
+    currentPassword: string,
+    newPassword: string
+  ): Promise<void> {
+    const user = await userDao.findByEmail(email);
+
+    if (!user || !user.passwordHash) {
+      throw new Error('User not found or not a local account');
     }
 
-    users[userIndex] = {
-      ...users[userIndex],
-      ...updates,
-      id: userId, // Ensure ID doesn't change
-      updatedAt: new Date(),
-    };
+    const isCurrentValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isCurrentValid) {
+      throw new Error('Current password is incorrect');
+    }
 
-    const { password: _, ...userWithoutPassword } = users[userIndex];
-    return userWithoutPassword;
+    const newHash = await bcrypt.hash(newPassword, 10);
+    await userDao.update(email, { passwordHash: newHash });
+  }
+
+  /**
+   * Verify email
+   */
+  async verifyEmail(email: string): Promise<SafeUser> {
+    return userDao.verifyEmail(email);
+  }
+
+  /**
+   * Verify phone number
+   */
+  async verifyPhoneNumber(email: string): Promise<SafeUser> {
+    return userDao.verifyPhoneNumber(email);
+  }
+
+  /**
+   * Block user
+   */
+  async blockUser(email: string): Promise<SafeUser> {
+    return userDao.block(email);
+  }
+
+  /**
+   * Delete user (soft delete)
+   */
+  async deleteUser(email: string): Promise<SafeUser> {
+    return userDao.softDelete(email);
   }
 
   /**
    * Generate JWT token
    */
-  private generateToken(user: IUser): string {
+  private generateToken(email: string, role: string): string {
     const payload: JWTPayload = {
-      userId: user.id,
-      email: user.email,
-      role: user.role,
+      userEmail: email,
+      role,
     };
 
     return jwt.sign(payload, env.JWT_SECRET, {
@@ -133,7 +236,7 @@ class AuthService {
   verifyToken(token: string): JWTPayload {
     try {
       return jwt.verify(token, env.JWT_SECRET) as JWTPayload;
-    } catch (error) {
+    } catch {
       throw new Error('Invalid token');
     }
   }

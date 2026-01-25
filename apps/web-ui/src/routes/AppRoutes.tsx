@@ -6,7 +6,7 @@ import Chat from '@pages/Chat';
 import Timeline from '@pages/Timeline';
 import TimelineTest from '@pages/TimelineTest';
 import MyTravels from '@pages/MyTravels';
-import Login from '@pages/Auth';
+import Login, { AuthCallback } from '@pages/Auth';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { ROUTES } from '@utils/constants';
 
@@ -31,6 +31,7 @@ const AppRoutes: React.FC = () => {
         } />
         <Route path={ROUTES.NOTIFICATIONS} element={<Notifications />} />
         <Route path={ROUTES.LOGIN} element={<Login />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path={ROUTES.PROFILE} element={<Profile />} />
         <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />
       </Routes>
@@ -39,3 +40,4 @@ const AppRoutes: React.FC = () => {
 };
 
 export default AppRoutes;
+

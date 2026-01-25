@@ -1,0 +1,10 @@
+src/database/dao/threadContextDao.ts(172,37): error TS2352: Conversion of type 'string | number | boolean | JsonObject | JsonArray | null' to type 'TravellerDetail[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'JsonArray' is not comparable to type 'TravellerDetail[]'.
+    Type 'JsonValue' is not comparable to type 'TravellerDetail'.
+      Type 'JsonValue[]' is missing the following properties from type 'TravellerDetail': member_id, name
+src/database/dao/threadContextDao.ts(193,37): error TS2352: Conversion of type 'string | number | boolean | JsonObject | JsonArray | null' to type 'TravellerDetail[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'JsonArray' is not comparable to type 'TravellerDetail[]'.
+    Type 'JsonValue' is not comparable to type 'TravellerDetail'.
+      Type 'JsonValue[]' is missing the following properties from type 'TravellerDetail': member_id, name
+src/database/dao/userDao.ts(2,52): error TS6133: 'Prisma' is declared but its value is never read.
+src/services/authService.ts(5,24): error TS6133: 'UserStatus' is declared but its value is never read.

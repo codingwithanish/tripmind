@@ -1,3 +1,8 @@
+import { threadDao } from '../database/dao';
+
+// Define ThreadStatus locally (matches Prisma enum)
+type ThreadStatus = 'draft' | 'planning' | 'confirmed' | 'completed' | 'cancelled' | 'dropped';
+
 export type TravelCardStatus = 'confirmed' | 'planning' | 'completed' | 'dropped';
 
 export interface TravelIconInfo {
@@ -34,163 +39,6 @@ export interface MyTravelCard {
     notifications: TravelNotification[];
 }
 
-// Dummy travel data for development
-const myTravels: MyTravelCard[] = [
-    {
-        thread_id: 'travel-001',
-        travel_summary: '5 Days Family Adventurous Trip to Goa',
-        status: 'confirmed',
-        images: [
-            {
-                type: 'thumbnail',
-                url: 'https://images.unsplash.com/photo-1512343879784-a960bf40e7f2?w=400',
-                description: 'Goa Beach View',
-            },
-        ],
-        summary: [
-            {
-                icon: { provider: 'iconify', name: 'mdi:calendar-range' },
-                title: 'Jan 15 - Jan 20 (5 Days)',
-                subtitle: '',
-                priority: 1,
-            },
-            {
-                icon: { provider: 'iconify', name: 'mdi:currency-usd' },
-                title: 'Est Cost: 4000 USD',
-                subtitle: '',
-                priority: 2,
-            },
-            {
-                icon: { provider: 'iconify', name: 'mdi:account-group' },
-                title: 'Family Trip',
-                subtitle: '',
-                priority: 3,
-            },
-        ],
-        notifications: [
-            {
-                icon: { provider: 'iconify', name: 'mdi:alert-circle' },
-                title: 'Attention Needed',
-                subtitle: 'One of your family member passport not Upgraded',
-                priority: 1,
-            },
-        ],
-    },
-    {
-        thread_id: 'travel-002',
-        travel_summary: 'Weekend Getaway to Manali',
-        status: 'planning',
-        images: [
-            {
-                type: 'thumbnail',
-                url: 'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?w=400',
-                description: 'Manali Mountains',
-            },
-        ],
-        summary: [
-            {
-                icon: { provider: 'iconify', name: 'mdi:calendar-range' },
-                title: 'Feb 10 - Feb 12 (3 Days)',
-                subtitle: '',
-                priority: 1,
-            },
-            {
-                icon: { provider: 'iconify', name: 'mdi:currency-usd' },
-                title: 'Est Cost: 1500 USD',
-                subtitle: '',
-                priority: 2,
-            },
-            {
-                icon: { provider: 'iconify', name: 'mdi:account-heart' },
-                title: 'Couple Trip',
-                subtitle: '',
-                priority: 3,
-            },
-        ],
-        notifications: [
-            {
-                icon: { provider: 'iconify', name: 'mdi:information' },
-                title: 'Booking Reminder',
-                subtitle: 'Hotel booking pending for this trip',
-                priority: 1,
-            },
-        ],
-    },
-    {
-        thread_id: 'travel-003',
-        travel_summary: 'Business Conference in Singapore',
-        status: 'completed',
-        images: [
-            {
-                type: 'thumbnail',
-                url: 'https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=400',
-                description: 'Singapore Skyline',
-            },
-        ],
-        summary: [
-            {
-                icon: { provider: 'iconify', name: 'mdi:calendar-range' },
-                title: 'Dec 5 - Dec 8 (4 Days)',
-                subtitle: '',
-                priority: 1,
-            },
-            {
-                icon: { provider: 'iconify', name: 'mdi:currency-usd' },
-                title: 'Total Spent: 3200 USD',
-                subtitle: '',
-                priority: 2,
-            },
-            {
-                icon: { provider: 'iconify', name: 'mdi:briefcase' },
-                title: 'Business Trip',
-                subtitle: '',
-                priority: 3,
-            },
-        ],
-        notifications: [],
-    },
-    {
-        thread_id: 'travel-004',
-        travel_summary: 'Cancelled Trip to Thailand',
-        status: 'dropped',
-        images: [
-            {
-                type: 'thumbnail',
-                url: 'https://images.unsplash.com/photo-1528181304800-259b08848526?w=400',
-                description: 'Thailand Temple',
-            },
-        ],
-        summary: [
-            {
-                icon: { provider: 'iconify', name: 'mdi:calendar-range' },
-                title: 'Mar 1 - Mar 7 (7 Days)',
-                subtitle: '',
-                priority: 1,
-            },
-            {
-                icon: { provider: 'iconify', name: 'mdi:currency-usd' },
-                title: 'Est Cost: 2500 USD',
-                subtitle: '',
-                priority: 2,
-            },
-            {
-                icon: { provider: 'iconify', name: 'mdi:account-multiple' },
-                title: 'Friends Trip',
-                subtitle: '',
-                priority: 3,
-            },
-        ],
-        notifications: [
-            {
-                icon: { provider: 'iconify', name: 'mdi:cancel' },
-                title: 'Trip Cancelled',
-                subtitle: 'This trip was cancelled due to schedule conflicts',
-                priority: 1,
-            },
-        ],
-    },
-];
-
 export interface PaginationInfo {
     page: number;
     limit: number;
@@ -203,39 +51,208 @@ export interface MyTravelsResponse {
     pagination: PaginationInfo;
 }
 
+/**
+ * Map database thread status to travel card status
+ */
+function mapThreadStatusToCardStatus(status: ThreadStatus): TravelCardStatus {
+    switch (status) {
+        case 'confirmed':
+            return 'confirmed';
+        case 'planning':
+        case 'draft':
+            return 'planning';
+        case 'completed':
+            return 'completed';
+        case 'cancelled':
+        case 'dropped':
+            return 'dropped';
+        default:
+            return 'planning';
+    }
+}
+
+/**
+ * Generate default thumbnail for travel
+ */
+function getDefaultThumbnail(): TravelImage {
+    return {
+        type: 'thumbnail',
+        url: 'https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=400',
+        description: 'Travel destination',
+    };
+}
+
 class MyTravelService {
     /**
      * Get all travels for a user with pagination and optional status filter
      */
     async getMyTravels(
-        _userId: string,
+        userEmail: string,
         page: number = 1,
         limit: number = 10,
         status?: TravelCardStatus
     ): Promise<MyTravelsResponse> {
-        // Filter by status if provided
-        let filteredTravels = myTravels;
+        // Map card status to thread statuses
+        let threadStatus: ThreadStatus | undefined;
         if (status) {
-            filteredTravels = myTravels.filter((t) => t.status === status);
+            switch (status) {
+                case 'confirmed':
+                    threadStatus = 'confirmed';
+                    break;
+                case 'planning':
+                    threadStatus = 'planning';
+                    break;
+                case 'completed':
+                    threadStatus = 'completed';
+                    break;
+                case 'dropped':
+                    threadStatus = 'dropped';
+                    break;
+            }
         }
 
-        // Calculate pagination
-        const total = filteredTravels.length;
-        const totalPages = Math.ceil(total / limit);
-        const startIndex = (page - 1) * limit;
-        const endIndex = startIndex + limit;
+        // Get threads from database
+        const { threads, total } = await threadDao.findByUserEmail(
+            userEmail,
+            page,
+            limit,
+            threadStatus
+        );
 
-        // Get paginated data
-        const paginatedData = filteredTravels.slice(startIndex, endIndex);
+        // Transform threads to travel cards
+        const travelCards: MyTravelCard[] = threads.map((thread) => {
+            const cardStatus = mapThreadStatusToCardStatus(thread.status);
+
+            // Build summary items
+            const summaryItems: TravelSummaryItem[] = [];
+
+            // Status indicator
+            summaryItems.push({
+                icon: { provider: 'iconify', name: 'mdi:progress-check' },
+                title: `Status: ${thread.status.charAt(0).toUpperCase() + thread.status.slice(1)}`,
+                subtitle: '',
+                priority: 1,
+            });
+
+            // Progress if in planning
+            if (cardStatus === 'planning' && thread.timelineReadyProgress > 0) {
+                summaryItems.push({
+                    icon: { provider: 'iconify', name: 'mdi:percent' },
+                    title: `Progress: ${thread.timelineReadyProgress}%`,
+                    subtitle: '',
+                    priority: 2,
+                });
+            }
+
+            // Created date
+            summaryItems.push({
+                icon: { provider: 'iconify', name: 'mdi:calendar' },
+                title: `Created: ${thread.createdAt.toLocaleDateString()}`,
+                subtitle: '',
+                priority: 3,
+            });
+
+            // Build notifications
+            const notifications: TravelNotification[] = [];
+
+            // Warning if timeline not ready
+            if (
+                cardStatus === 'planning' &&
+                !thread.timelineId &&
+                thread.timelineReadyProgress < 80
+            ) {
+                notifications.push({
+                    icon: { provider: 'iconify', name: 'mdi:information' },
+                    title: 'Continue Planning',
+                    subtitle: 'More details needed to generate timeline',
+                    priority: 1,
+                });
+            }
+
+            // Confirmation needed
+            if (thread.status === 'confirmed' && !thread.isConfirmed) {
+                notifications.push({
+                    icon: { provider: 'iconify', name: 'mdi:alert-circle' },
+                    title: 'Action Required',
+                    subtitle: 'Please confirm your travel details',
+                    priority: 1,
+                });
+            }
+
+            return {
+                thread_id: thread.id,
+                travel_summary: thread.summary || `Travel Plan - ${thread.createdAt.toLocaleDateString()}`,
+                status: cardStatus,
+                images: [getDefaultThumbnail()],
+                summary: summaryItems,
+                notifications,
+            };
+        });
+
+        const totalPages = Math.ceil(total / limit);
 
         return {
-            data: paginatedData,
+            data: travelCards,
             pagination: {
                 page,
                 limit,
                 total,
                 totalPages,
             },
+        };
+    }
+
+    /**
+     * Get a single travel by thread ID
+     */
+    async getTravelByThreadId(threadId: string): Promise<MyTravelCard | null> {
+        const thread = await threadDao.findById(threadId);
+
+        if (!thread) {
+            return null;
+        }
+
+        const cardStatus = mapThreadStatusToCardStatus(thread.status);
+
+        const summaryItems: TravelSummaryItem[] = [
+            {
+                icon: { provider: 'iconify', name: 'mdi:progress-check' },
+                title: `Status: ${thread.status.charAt(0).toUpperCase() + thread.status.slice(1)}`,
+                subtitle: '',
+                priority: 1,
+            },
+        ];
+
+        if (thread.timelineReadyProgress > 0) {
+            summaryItems.push({
+                icon: { provider: 'iconify', name: 'mdi:percent' },
+                title: `Progress: ${thread.timelineReadyProgress}%`,
+                subtitle: '',
+                priority: 2,
+            });
+        }
+
+        return {
+            thread_id: thread.id,
+            travel_summary: thread.summary || `Travel Plan - ${thread.createdAt.toLocaleDateString()}`,
+            status: cardStatus,
+            images: [getDefaultThumbnail()],
+            summary: summaryItems,
+            notifications: [],
+        };
+    }
+
+    /**
+     * Get travel counts by status for a user
+     */
+    async getTravelCounts(userEmail: string): Promise<Record<TravelCardStatus, number>> {
+        const counts = await threadDao.countByStatus(userEmail);
+
+        return {
+            confirmed: counts.confirmed,
+            planning: counts.planning + counts.draft,
+            completed: counts.completed,
+            dropped: counts.cancelled + counts.dropped,
         };
     }
 }

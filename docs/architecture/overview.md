@@ -21,7 +21,7 @@ TripMind is a travel planning application built as a monorepo with the following
 ┌────────────────────────┐    ┌───────────────────────────────┐
 │     AI Service         │    │    Integration Service        │
 │  services/ai-service   │    │ services/integration-service  │
-│   (Python/LangGraph)   │    │      (Python/FastAPI)         │
+│   (Python/GoogleADK)   │    │      (Python/FastAPI)         │
 └────────────────────────┘    └───────────────────────────────┘
 ```
 
@@ -39,14 +39,12 @@ TripMind is a travel planning application built as a monorepo with the following
 - Orchestrates AI and integration services
 
 ### AI Service (`services/ai-service`)
-- Python + LangGraph
+- Python + GoogleADK
 - Handles NLP and AI-powered features
-- *Planned implementation*
 
 ### Integration Service (`services/integration-service`)
 - Python + FastAPI
 - Third-party API integrations
-- *Planned implementation*
 
 ## Shared Packages
 

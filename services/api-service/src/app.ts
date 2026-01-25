@@ -2,9 +2,11 @@ import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import passport from 'passport';
 import routes from './routes';
 import errorHandler from './middleware/errorHandler';
 import { env } from './config/env';
+import { configurePassport } from './config/passportConfig';
 
 const app: Application = express();
 
@@ -27,6 +29,10 @@ app.use(express.urlencoded({ extended: true }));
 if (env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+
+// Initialize Passport and configure Google OAuth
+app.use(passport.initialize());
+configurePassport();
 
 // API routes
 app.use('/api/v1', routes);

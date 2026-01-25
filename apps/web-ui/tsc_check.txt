@@ -1,0 +1,19 @@
+src/components/layout/Header/Header.tsx(14,29): error TS6133: 'setNotificationCount' is declared but its value is never read.
+src/components/layout/Header/Header.tsx(124,25): error TS2339: Property 'avatar' does not exist on type 'User'.
+src/components/layout/Header/Header.tsx(125,36): error TS2339: Property 'avatar' does not exist on type 'User'.
+src/interfaces/IUser.ts(1,16): error TS6133: 'AuthProvider' is declared but its value is never read.
+src/interfaces/IUser.ts(1,30): error TS6133: 'UserRole' is declared but its value is never read.
+src/interfaces/IUser.ts(1,46): error TS6137: Cannot import type declaration files. Consider importing 'user.types' instead of '@types/user.types'.
+src/services/api.ts(2,10): error TS6133: 'ApiResponse' is declared but its value is never read.
+src/services/api.ts(2,39): error TS6137: Cannot import type declaration files. Consider importing 'api.types' instead of '@types/api.types'.
+src/services/authService.ts(2,68): error TS6137: Cannot import type declaration files. Consider importing 'user.types' instead of '@types/user.types'.
+src/services/authService.ts(3,29): error TS6137: Cannot import type declaration files. Consider importing 'api.types' instead of '@types/api.types'.
+src/services/notificationService.ts(2,30): error TS6137: Cannot import type declaration files. Consider importing 'notification.types' instead of '@types/notification.types'.
+src/services/notificationService.ts(3,29): error TS6137: Cannot import type declaration files. Consider importing 'api.types' instead of '@types/api.types'.
+src/services/timelineService.ts(7,8): error TS6137: Cannot import type declaration files. Consider importing 'timeline.types' instead of '@types/timeline.types'.
+src/services/timelineService.ts(8,29): error TS6137: Cannot import type declaration files. Consider importing 'api.types' instead of '@types/api.types'.
+src/services/timelineWebSocket.ts(3,5): error TS6133: 'TimelineData' is declared but its value is never read.
+src/services/timelineWebSocket.ts(4,5): error TS6133: 'TimelineWebSocketEvent' is declared but its value is never read.
+src/services/timelineWebSocket.ts(34,13): error TS6133: 'reconnectAttempts' is declared but its value is never read.
+src/services/travelService.ts(2,60): error TS6137: Cannot import type declaration files. Consider importing 'travel.types' instead of '@types/travel.types'.
+src/services/travelService.ts(3,29): error TS6137: Cannot import type declaration files. Consider importing 'api.types' instead of '@types/api.types'.
