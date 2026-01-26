@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { env } from '@config/env';
 import { userDao, memberDao, SafeUser } from '../database/dao';
-import { AuthProvider, UserStatus } from '@prisma/client';
+import { AuthProvider } from '@prisma/client';
 
 /**
  * JWT Payload structure

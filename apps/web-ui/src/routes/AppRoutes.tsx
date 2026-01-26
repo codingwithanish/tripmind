@@ -6,13 +6,13 @@ import Chat from '@pages/Chat';
 import Timeline from '@pages/Timeline';
 import TimelineTest from '@pages/TimelineTest';
 import MyTravels from '@pages/MyTravels';
-import Login, { AuthCallback } from '@pages/Auth';
+import Login, { AuthCallback, Signup } from '@pages/Auth';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { ROUTES } from '@utils/constants';
+import Profile from '@pages/Profile';
 
 // Placeholder components (to be implemented later)
 const Notifications = () => <div style={{ padding: '2rem' }}>Notifications Page - Coming Soon</div>;
-const Profile = () => <div style={{ padding: '2rem' }}>Profile Page - Coming Soon</div>;
 
 const AppRoutes: React.FC = () => {
   return (
@@ -31,6 +31,7 @@ const AppRoutes: React.FC = () => {
         } />
         <Route path={ROUTES.NOTIFICATIONS} element={<Notifications />} />
         <Route path={ROUTES.LOGIN} element={<Login />} />
+        <Route path={ROUTES.REGISTER} element={<Signup />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path={ROUTES.PROFILE} element={<Profile />} />
         <Route path="*" element={<Navigate to={ROUTES.HOME} replace />} />

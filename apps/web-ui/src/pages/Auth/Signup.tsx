@@ -1,37 +1,45 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { ROUTES } from '@utils/constants';
 import './Login.css';
 
-const Login: React.FC = () => {
+const Signup: React.FC = () => {
     const navigate = useNavigate();
-    const location = useLocation();
-    const { login, loginWithGoogle, isLoading } = useAuth();
+    const { register, loginWithGoogle, isLoading } = useAuth();
 
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
-
-    // Get the page user was trying to access before redirect
-    const from = (location.state as { from?: { pathname: string } })?.from?.pathname || ROUTES.HOME;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
-        if (!email || !password) {
+        if (!name || !email || !password || !confirmPassword) {
             setError('Please fill in all fields');
             return;
         }
 
-        const result = await login(email, password);
+        if (password !== confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
+
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters');
+            return;
+        }
+
+        const result = await register(name, email, password);
 
         if (result.success) {
-            navigate(from, { replace: true });
+            navigate(ROUTES.HOME, { replace: true });
         } else {
-            setError(result.error || 'Login failed');
+            setError(result.error || 'Registration failed');
         }
     };
 
@@ -45,11 +53,11 @@ const Login: React.FC = () => {
                 <div className="login-header">
                     <div className="login-icon">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
                         </svg>
                     </div>
-                    <h1 className="login-title">Welcome to TripMind</h1>
-                    <p className="login-subtitle">Sign in to access your travel plans</p>
+                    <h1 className="login-title">Create Account</h1>
+                    <p className="login-subtitle">Join TripMind to plan your next adventure</p>
                 </div>
 
                 {/* Google Sign-in Button */}
@@ -86,6 +94,23 @@ const Login: React.FC = () => {
                     )}
 
                     <div className="form-group">
+                        <label htmlFor="name">Full Name</label>
+                        <div className="input-wrapper">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="input-icon">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                            </svg>
+                            <input
+                                type="text"
+                                id="name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Enter your full name"
+                                disabled={isLoading}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="form-group">
                         <label htmlFor="email">Email</label>
                         <div className="input-wrapper">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="input-icon">
@@ -113,7 +138,7 @@ const Login: React.FC = () => {
                                 id="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Enter your password"
+                                placeholder="Create a password"
                                 disabled={isLoading}
                             />
                             <button
@@ -135,6 +160,23 @@ const Login: React.FC = () => {
                         </div>
                     </div>
 
+                    <div className="form-group">
+                        <label htmlFor="confirmPassword">Confirm Password</label>
+                        <div className="input-wrapper">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="input-icon">
+                                <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z" />
+                            </svg>
+                            <input
+                                type={showPassword ? 'text' : 'password'}
+                                id="confirmPassword"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                placeholder="Confirm your password"
+                                disabled={isLoading}
+                            />
+                        </div>
+                    </div>
+
                     <button
                         type="submit"
                         className="login-button"
@@ -143,27 +185,20 @@ const Login: React.FC = () => {
                         {isLoading ? (
                             <>
                                 <span className="login-spinner"></span>
-                                Signing in...
+                                Creating account...
                             </>
                         ) : (
-                            'Sign In'
+                            'Sign Up'
                         )}
                     </button>
+
+                    <div className="login-footer">
+                        Already have an account? <Link to={ROUTES.LOGIN}>Sign In</Link>
+                    </div>
                 </form>
-
-                <div className="login-footer">
-                    Don't have an account? <Link to={ROUTES.REGISTER}>Sign Up</Link>
-                </div>
-
-                <div className="login-hint">
-                    <p><strong>Demo Credentials:</strong></p>
-                    <p>Email: user@tripmind.com</p>
-                    <p>Password: tripmind123</p>
-                </div>
             </div>
         </div>
     );
 };
 
-export default Login;
-
+export default Signup;

@@ -2,24 +2,21 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { STORAGE_KEYS } from '@utils/constants';
 import { appConfig } from '@/config/app.config';
 
-// Hardcoded credentials for demo mode
+import authService from '@services/authService';
+import { User } from '@types/user.types';
+
+// Hardcoded credentials for demo mode (fallback)
 const VALID_CREDENTIALS = {
   email: 'user@tripmind.com',
   password: 'tripmind123',
 };
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-  authProvider?: 'local' | 'google' | 'facebook';
-}
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => void;
   handleOAuthCallback: (token: string, email: string, name: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
@@ -51,27 +48,55 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
     setIsLoading(true);
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 500));
+    try {
+      const { user: loggedInUser, token } = await authService.login({ email, password });
 
-    if (email === VALID_CREDENTIALS.email && password === VALID_CREDENTIALS.password) {
-      const loggedInUser: User = {
-        id: '1',
-        email: VALID_CREDENTIALS.email,
-        name: 'TripMind User',
-        authProvider: 'local',
-      };
-      // Store a mock token for API requests
-      const mockToken = 'demo-token-' + Date.now();
-      localStorage.setItem(STORAGE_KEYS.TOKEN, mockToken);
+      localStorage.setItem(STORAGE_KEYS.TOKEN, token);
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(loggedInUser));
       setUser(loggedInUser);
       setIsLoading(false);
       return { success: true };
-    }
+    } catch (error: any) {
+      console.error('Login failed:', error);
 
-    setIsLoading(false);
-    return { success: false, error: 'Invalid email or password' };
+      // Fallback to demo credentials if API fails or for demo purposes
+      if (email === VALID_CREDENTIALS.email && password === VALID_CREDENTIALS.password) {
+        const demoUser: User = {
+          id: '1',
+          email: VALID_CREDENTIALS.email,
+          name: 'TripMind User',
+          authProvider: 'local',
+          role: 'user',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        const mockToken = 'demo-token-' + Date.now();
+        localStorage.setItem(STORAGE_KEYS.TOKEN, mockToken);
+        localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(demoUser));
+        setUser(demoUser);
+        setIsLoading(false);
+        return { success: true };
+      }
+
+      setIsLoading(false);
+      return { success: false, error: error.response?.data?.message || error.message || 'Invalid email or password' };
+    }
+  };
+
+  const register = async (name: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    setIsLoading(true);
+    try {
+      const { user: newUser, token } = await authService.register({ name, email, password });
+
+      localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(newUser));
+      setUser(newUser);
+      setIsLoading(false);
+      return { success: true };
+    } catch (error: any) {
+      setIsLoading(false);
+      return { success: false, error: error.response?.data?.message || error.message || 'Registration failed' };
+    }
   };
 
   /**
@@ -99,6 +124,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email,
         name: decodeURIComponent(name),
         authProvider: 'google',
+        role: 'user',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       };
 
       // Store token and user
@@ -127,6 +155,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         isAuthenticated: !!user,
         isLoading,
         login,
+        register,
         loginWithGoogle,
         handleOAuthCallback,
         logout,

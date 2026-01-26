@@ -6,6 +6,8 @@ import timelineRoutes from './timelineRoutes';
 import suggestionRoutes from './suggestionRoutes';
 import myTravelRoutes from './myTravelRoutes';
 
+import memberRoutes from './memberRoutes';
+
 const router = Router();
 
 // Mount routes
@@ -15,6 +17,7 @@ router.use('/chat', chatRoutes);
 router.use('/timeline', timelineRoutes);
 router.use('/suggestions', suggestionRoutes);
 router.use('/my-travel', myTravelRoutes);
+router.use('/profile', memberRoutes);
 
 // Health check endpoint
 router.get('/health', (_req, res) => {

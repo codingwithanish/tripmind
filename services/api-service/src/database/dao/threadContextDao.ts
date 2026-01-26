@@ -169,7 +169,7 @@ class ThreadContextDao {
             });
         }
 
-        const existingTravellers = (context.travellersDetails as TravellerDetail[]) || [];
+        const existingTravellers = (context.travellersDetails as unknown as TravellerDetail[]) || [];
         const updatedTravellers = [...existingTravellers, traveller];
 
         return this.updateByThreadId(threadId, {
@@ -190,7 +190,7 @@ class ThreadContextDao {
             throw new Error('Thread context not found');
         }
 
-        const existingTravellers = (context.travellersDetails as TravellerDetail[]) || [];
+        const existingTravellers = (context.travellersDetails as unknown as TravellerDetail[]) || [];
         const updatedTravellers = existingTravellers.filter(
             (t) => t.member_id !== memberId
         );

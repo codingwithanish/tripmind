@@ -1,5 +1,5 @@
 import { prisma } from '../prismaClient';
-import { User, UserStatus, AuthProvider, UserRole, Prisma } from '@prisma/client';
+import { User, UserStatus, AuthProvider, UserRole } from '@prisma/client';
 
 // Type for creating a new user
 export interface CreateUserInput {

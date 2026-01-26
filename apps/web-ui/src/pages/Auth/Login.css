@@ -335,3 +335,20 @@
         border-color: #4a4a5e;
     }
 }
+
+.login-footer {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-secondary, #64748b);
+}
+
+.login-footer a {
+    color: #6366f1;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.login-footer a:hover {
+    text-decoration: underline;
+}
