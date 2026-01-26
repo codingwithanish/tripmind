@@ -18,24 +18,44 @@ const Home: React.FC = () => {
   // Guard against React StrictMode double-mount
   const hasFetchedRef = useRef(false);
 
+  const fetchTemplates = async () => {
+    try {
+      setLoading(true);
+
+      // Get Screen Type
+      const screenType = window.innerWidth < 768 ? 'mobile' : 'desktop';
+
+      // Get Location (Default to Goa if fails)
+      let lat = 15.2993;
+      let lng = 74.1240;
+
+      try {
+        if (navigator.geolocation) {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+          });
+          lat = position.coords.latitude;
+          lng = position.coords.longitude;
+        }
+      } catch (e) {
+        console.warn('Geolocation access denied or failed, using default location:', e);
+      }
+
+      const data = await getSuggestionTemplates({ lat, lng, screenType });
+      setTemplates(data.sort((a, b) => a.order - b.order));
+      setError(null);
+    } catch (err) {
+      setError('Failed to load suggestions. Please try again.');
+      console.error('Error fetching templates:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     // Prevent duplicate fetch from React StrictMode double-mount
     if (hasFetchedRef.current) return;
     hasFetchedRef.current = true;
-
-    const fetchTemplates = async () => {
-      try {
-        setLoading(true);
-        const data = await getSuggestionTemplates();
-        setTemplates(data.sort((a, b) => a.order - b.order));
-        setError(null);
-      } catch (err) {
-        setError('Failed to load suggestions. Please try again.');
-        console.error('Error fetching templates:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
 
     fetchTemplates();
   }, []);
@@ -59,17 +79,7 @@ const Home: React.FC = () => {
   const handleRetry = () => {
     setError(null);
     setLoading(true);
-    getSuggestionTemplates()
-      .then((data) => {
-        setTemplates(data.sort((a, b) => a.order - b.order));
-      })
-      .catch((err) => {
-        setError('Failed to load suggestions. Please try again.');
-        console.error('Error fetching templates:', err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    fetchTemplates();
   };
 
   const handleSuggestionFocus = (templateId: string) => {

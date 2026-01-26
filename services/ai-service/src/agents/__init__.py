@@ -11,18 +11,22 @@ from src.framework import AgentRegistry
 from .itinerary_agent import ItineraryAgent
 from .recommender_agent import RecommenderAgent
 from .activity_agent import ActivityAgent
+from .suggestion_agent import SuggestionAgent
 
 # Create and register agent instances
 _itinerary_agent = ItineraryAgent()
 _recommender_agent = RecommenderAgent()
 _activity_agent = ActivityAgent()
+_suggestion_agent = SuggestionAgent()
 
 AgentRegistry.register(_itinerary_agent)
 AgentRegistry.register(_recommender_agent)
 AgentRegistry.register(_activity_agent)
+AgentRegistry.register(_suggestion_agent)
 
 __all__ = [
     "ItineraryAgent",
     "RecommenderAgent",
     "ActivityAgent",
+    "SuggestionAgent",
 ]

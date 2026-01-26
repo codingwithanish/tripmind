@@ -29,6 +29,7 @@ export const env = {
   WEATHER_API_KEY: process.env.WEATHER_API_KEY || '',
   BOOKING_API_KEY: process.env.BOOKING_API_KEY || '',
   AI_SERVICE_API_KEY: process.env.AI_SERVICE_API_KEY || '',
+  AI_SERVICE_URL: process.env.AI_SERVICE_URL || 'http://localhost:8001',
 };
 
 export default env;

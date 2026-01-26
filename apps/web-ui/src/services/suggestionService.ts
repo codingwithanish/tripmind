@@ -24,8 +24,16 @@ interface ApiResponse<T> {
   error?: string;
 }
 
-export const getSuggestionTemplates = async (): Promise<SuggestionTemplate[]> => {
-  const response = await api.get<ApiResponse<SuggestionTemplate[]>>('/suggestions/templates');
+export interface SuggestionParams {
+  lat: number;
+  lng: number;
+  screenType: 'mobile' | 'desktop';
+}
+
+export const getSuggestionTemplates = async (params: SuggestionParams): Promise<SuggestionTemplate[]> => {
+  const response = await api.get<ApiResponse<SuggestionTemplate[]>>('/suggestions/templates', {
+    params,
+  });
   return response.data.data!;
 };
 
