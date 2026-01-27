@@ -6,12 +6,11 @@ class SuggestionInput(BaseModel):
     screen_type: str = Field(description="mobile or desktop")
     count: int = 4
 
-class PlaceholderOption(BaseModel):
-    value: str
-
+class Placeholder(BaseModel):
+    name: str  # The placeholder name, e.g. "trip_type", "duration"
     type: str
     required: bool = True
-    options: List[PlaceholderOption]
+    options: List[str]
 
 class SuggestionItem(BaseModel):
     id: str
@@ -19,7 +18,7 @@ class SuggestionItem(BaseModel):
     template_text: str
     description: str
     category: str
-    placeholders: dict[str, Placeholder]
+    placeholders: List[Placeholder]  # Changed from dict to list for Gemini API compatibility
 
 class SuggestionOutput(BaseModel):
     suggestions: List[SuggestionItem]

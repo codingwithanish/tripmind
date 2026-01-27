@@ -1,12 +1,15 @@
 """Suggestion Agent implementation."""
 
 from google.adk.agents import Agent
+from google.adk.agents.readonly_context import ReadonlyContext
 from pydantic import BaseModel
 
 from src.framework.base import BaseAgent
 from .schemas import SuggestionOutput
 
-SYSTEM_PROMPT = """You are a creative travel assistant. Your task is to generate personalized travel suggestion templates based on a specific location.
+# Template with placeholders - we'll substitute {location} and {screen_type} manually
+# Double braces {{variable_name}} are meant for the LLM to understand the output format
+SYSTEM_PROMPT_TEMPLATE = """You are a creative travel assistant. Your task is to generate personalized travel suggestion templates based on a specific location.
 
 INPUT CONTEXT:
 - Location: {location}
@@ -26,9 +29,9 @@ REQUIREMENTS:
 3. TEMPLATE TEXT FORMAT:
    - The text must be inspiring and concise.
    - You MUST use placeholders for variable parts.
-   - Syntax: {{variable_name}}
-   - Example Mobile: "Enjoy a {{trip_type}} in {location} with views."
-   - Example Desktop: "Immerse yourself in the vibrant culture of {location} for a {{duration}} day adventure, perfect for a {{trip_type}} seeking relaxation."
+   - Syntax: use double curly braces around variable names, e.g. the text "trip_type" wrapped in two opening braces and two closing braces
+   - Example Mobile: "Enjoy a [trip_type placeholder] in the location with views."
+   - Example Desktop: "Immerse yourself in the vibrant culture of the location for a [duration placeholder] day adventure, perfect for a [trip_type placeholder] seeking relaxation."
    - Bold important words using **text**.
    - Italicize mood/vibe using *text*.
 
@@ -40,6 +43,21 @@ REQUIREMENTS:
 OUTPUT FORMAT:
 Return strictly a JSON object matching the SuggestionOutput schema.
 """
+
+
+def instruction_provider(ctx: ReadonlyContext) -> str:
+    """
+    Instruction provider that manually substitutes session state variables.
+    This prevents ADK from interpreting double braces in examples as template variables.
+    """
+    location = ctx.state.get("location", "Unknown location")
+    screen_type = ctx.state.get("screen_type", "desktop")
+    
+    return SYSTEM_PROMPT_TEMPLATE.format(
+        location=location,
+        screen_type=screen_type
+    )
+
 
 class SuggestionAgent(BaseAgent):
     """
@@ -65,6 +83,6 @@ class SuggestionAgent(BaseAgent):
             name=self.name,
             model="gemini-2.0-flash",
             description=self.description,
-            instruction=SYSTEM_PROMPT,
+            instruction=instruction_provider,  # Use function instead of string
             output_schema=SuggestionOutput,
         )

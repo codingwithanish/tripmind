@@ -6,6 +6,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+import os
+
 from src.framework import (
     AgentRegistry,
     AgentResponse,
@@ -17,9 +19,10 @@ from src.framework.schemas import AgentInfo
 # Import agents to trigger registration
 from src import agents  # noqa: F401
 
-# Configure logging
+# Configure logging with level from environment variable
+log_level = os.environ.get("LOG_LEVEL", "INFO").upper()
 logging.basicConfig(
-    level=logging.INFO,
+    level=getattr(logging, log_level, logging.INFO),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
@@ -29,6 +32,15 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan handler."""
     logger.info("Starting AI Service...")
+    
+    # Log API key status (masked for security)
+    api_key = os.environ.get("GOOGLE_API_KEY", "")
+    if api_key:
+        masked_key = f"{api_key[:8]}...{api_key[-4:]}" if len(api_key) > 12 else "***"
+        logger.debug(f"GOOGLE_API_KEY is set: {masked_key}")
+    else:
+        logger.warning("GOOGLE_API_KEY is NOT set!")
+    
     registered = AgentRegistry.list_agents()
     logger.info(f"Registered agents: {registered}")
     yield

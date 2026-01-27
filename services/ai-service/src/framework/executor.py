@@ -36,11 +36,14 @@ async def execute_agent(
     Returns:
         AgentResponse with either success output or error details
     """
+    logger.info(f"Executing agent '{agent_name}' with input: {input_payload}")
+    
     try:
         # 1. Get agent from registry
         agent = AgentRegistry.get(agent_name)
         if agent is None:
             raise AgentNotFoundError(agent_name)
+        logger.debug(f"Found agent: {agent.name}, description: {agent.description}")
 
         # 2. Format input for the agent
         formatted_input = agent.format_input(input_payload)
@@ -48,19 +51,20 @@ async def execute_agent(
         # 3. Get the ADK agent instance
         adk_agent = agent.get_adk_agent()
 
-        # 4. Create runner and session
-        session_service = InMemorySessionService()
+        # 4. Create runner
         runner = InMemoryRunner(
             agent=adk_agent,
             app_name=agent_name,
-            session_service=session_service,
         )
 
-        # 5. Create a session
-        session = await session_service.create_session(
+        # 5. Create a session with initial state from input_payload
+        logger.debug(f"Creating session with state: {input_payload}")
+        session = await runner.session_service.create_session(
             app_name=agent_name,
             user_id="system",
+            state=input_payload,
         )
+        logger.debug(f"Session created - ID: {session.id}, state: {session.state}")
 
         # 6. Create the user message
         user_content = types.Content(
