@@ -155,7 +155,7 @@ router.get('/:userId/:threadId/suggestions', (req: Request, res: Response) => {
 
 // Event-based streaming chat
 // POST /api/v1/chat/:userId/:threadId/stream
-router.post('/:userId/:threadId/stream', (req: Request, res: Response) => {
+router.post('/:userId/:threadId/stream', async (req: Request, res: Response) => {
     const { userId, threadId } = req.params;
     const { input, options } = req.body;
 
@@ -165,100 +165,199 @@ router.post('/:userId/:threadId/stream', (req: Request, res: Response) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    // Store user message
-    const messages = threadMessages.get(threadId) || [];
-    const userMsgId = `msg_${Date.now()}`;
-    messages.push({
-        id: userMsgId,
-        role: 'user',
-        sender_id: userId,
-        type: input?.type || 'text',
-        content: input?.content || '',
-        created_at: new Date().toISOString(),
-        status: 'sent'
-    });
-    threadMessages.set(threadId, messages);
+    try {
+        // For now, still use in-memory storage for backward compatibility
+        // TODO: Migrate to full database usage
+        const messages = threadMessages.get(threadId) || [];
+        const userMsgId = `msg_${Date.now()}`;
 
-    // Update progress
-    let progress = threadProgress.get(threadId) || 0;
-    progress = Math.min(progress + 20, 100);
-    threadProgress.set(threadId, progress);
-
-    // Generate AI response
-    const aiMsgId = `msg_${Date.now() + 1}`;
-    const contentId = `content_${Date.now()}`;
-
-    // Contextual responses based on progress
-    const responses = [
-        `Thanks for sharing! You said: "${input?.content}". **When are you planning to travel?** I can help find the best options for your timeline.`,
-        `Great choice! **What's your budget** for this trip? This helps me find accommodations and activities that fit your needs.`,
-        `Perfect! **How many people** will be traveling? This affects recommendations for transportation and lodging.`,
-        `*Wonderful!* **What type of activities** do you prefer? Adventure, relaxation, cultural experiences, or a mix?`,
-        `Almost there! **Any specific preferences** for accommodation? Luxury hotels, cozy B&Bs, or budget-friendly options?`,
-    ];
-
-    const responseIndex = Math.min(Math.floor(progress / 20) - 1, responses.length - 1);
-    const responseText = responses[Math.max(0, responseIndex)];
-
-    // Simulate streaming with events
-    const events: Array<{ event: string;[key: string]: unknown }> = [
-        { event: 'message.start', message_id: aiMsgId, role: 'assistant' },
-        { event: 'content.start', content_id: contentId, content_type: 'markdown' },
-    ];
-
-    // Split response into tokens for typing effect
-    const words = responseText.split(' ');
-    words.forEach(word => {
-        events.push({
-            event: 'content.token',
-            content_id: contentId,
-            content_type: 'markdown',
-            value: word + ' '
+        // Store user message
+        messages.push({
+            id: userMsgId,
+            role: 'user',
+            sender_id: userId,
+            type: input?.type || 'text',
+            content: input?.content || '',
+            created_at: new Date().toISOString(),
+            status: 'sent'
         });
-    });
+        threadMessages.set(threadId, messages);
 
-    events.push({ event: 'content.end', content_id: contentId });
+        // Get current plan summary from in-memory (will migrate to DB later)
+        const planSummaryStore: Map<string, any> = (global as any).__planSummaryStore || new Map();
+        (global as any).__planSummaryStore = planSummaryStore;
+        const currentPlanSummary = planSummaryStore.get(threadId) || null;
 
-    // Add suggestions if enabled
-    if (options?.enable_suggestions !== false) {
-        const suggestionItems = [
-            { id: 's_1', label: 'Option A', value: 'option_a' },
-            { id: 's_2', label: 'Option B', value: 'option_b' },
-            { id: 's_3', label: 'Option C', value: 'option_c' },
+        // Build conversation history for the agent
+        const conversationHistory = messages.map(msg => ({
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content
+        }));
+
+        // Call the travel planning agent
+        const { travelPlanningService } = await import('../services/travelPlanningService');
+        const agentResponse = await travelPlanningService.processMessage({
+            conversationHistory,
+            currentPlanSummary,
+            latestUserMessage: input?.content || ''
+        });
+
+        // Update plan summary in store
+        if (agentResponse.planUpdated) {
+            planSummaryStore.set(threadId, agentResponse.planSummary);
+        }
+
+        // Update progress based on plan readiness
+        let progress = threadProgress.get(threadId) || 0;
+        if (agentResponse.planReady) {
+            progress = 100;
+        } else {
+            // Calculate progress based on filled mandatory fields
+            const mandatoryFields = agentResponse.planSummary.user_variables.filter(
+                v => v.type === 'mandatory'
+            );
+            const filledFields = mandatoryFields.filter(
+                v => v.value && v.value !== 'NOT_AVAILABLE'
+            );
+            progress = mandatoryFields.length > 0
+                ? Math.round((filledFields.length / mandatoryFields.length) * 100)
+                : 0;
+        }
+        threadProgress.set(threadId, progress);
+
+        // Generate AI response
+        const aiMsgId = `msg_${Date.now() + 1}`;
+        const contentId = `content_${Date.now()}`;
+        const responseText = agentResponse.responseMessage;
+
+        // Build streaming events
+        const events: Array<{ event: string;[key: string]: unknown }> = [
+            { event: 'message.start', message_id: aiMsgId, role: 'assistant' },
+            { event: 'content.start', content_id: contentId, content_type: 'markdown' },
         ];
-        events.push({ event: 'suggestions', items: suggestionItems });
+
+        // Split response into tokens for typing effect
+        const words = responseText.split(' ');
+        words.forEach(word => {
+            events.push({
+                event: 'content.token',
+                content_id: contentId,
+                content_type: 'markdown',
+                value: word + ' '
+            });
+        });
+
+        events.push({ event: 'content.end', content_id: contentId });
+
+        // Add plan status metadata
+        events.push({
+            event: 'plan_status',
+            plan_ready: agentResponse.planReady,
+            progress: progress,
+            plan_summary: agentResponse.planSummary.travel_summary
+        });
+
+        // Add suggestions if enabled and plan is not ready
+        if (options?.enable_suggestions !== false && !agentResponse.planReady) {
+            // Generate contextual suggestions based on next question
+            const suggestionItems = generateSuggestions(agentResponse.nextQuestion);
+            if (suggestionItems.length > 0) {
+                events.push({ event: 'suggestions', items: suggestionItems });
+            }
+        }
+
+        events.push({ event: 'message.end', message_id: aiMsgId });
+
+        // Store AI message
+        messages.push({
+            id: aiMsgId,
+            role: 'assistant',
+            sender_id: 'ai_system',
+            type: 'markdown',
+            content: responseText,
+            created_at: new Date().toISOString(),
+            status: 'delivered'
+        });
+        threadMessages.set(threadId, messages);
+
+        // Stream events with delays
+        let eventIndex = 0;
+        const sendNextEvent = () => {
+            if (eventIndex < events.length) {
+                res.write(JSON.stringify(events[eventIndex]) + '\n');
+                eventIndex++;
+                // Faster for content tokens, slower for structural events
+                const delay = events[eventIndex - 1].event === 'content.token' ? 30 : 100;
+                setTimeout(sendNextEvent, delay);
+            } else {
+                res.end();
+            }
+        };
+
+        sendNextEvent();
+    } catch (error) {
+        console.error('Error in chat stream:', error);
+
+        // Send error event
+        const errorEvent = {
+            event: 'error',
+            message: error instanceof Error ? error.message : 'An error occurred'
+        };
+        res.write(JSON.stringify(errorEvent) + '\n');
+        res.end();
+    }
+});
+
+// Helper function to generate contextual suggestions based on agent's next question
+function generateSuggestions(nextQuestion: string): Array<{ id: string; label: string; value: string }> {
+    const questionLower = nextQuestion.toLowerCase();
+
+    if (questionLower.includes('when') || questionLower.includes('date') || questionLower.includes('travel')) {
+        return [
+            { id: 's_1', label: 'This week', value: 'this week' },
+            { id: 's_2', label: 'Next month', value: 'next month' },
+            { id: 's_3', label: 'In 3 months', value: 'in about 3 months' },
+            { id: 's_4', label: 'Flexible', value: 'I am flexible with dates' },
+        ];
     }
 
-    events.push({ event: 'message.end', message_id: aiMsgId });
+    if (questionLower.includes('budget') || questionLower.includes('spend')) {
+        return [
+            { id: 's_1', label: 'Budget', value: 'budget-friendly, under $1000' },
+            { id: 's_2', label: 'Mid-range', value: 'mid-range, around $2000-5000' },
+            { id: 's_3', label: 'Luxury', value: 'luxury, no budget limit' },
+        ];
+    }
 
-    // Store AI message
-    messages.push({
-        id: aiMsgId,
-        role: 'assistant',
-        sender_id: 'ai_system',
-        type: 'markdown',
-        content: responseText,
-        created_at: new Date().toISOString(),
-        status: 'delivered'
-    });
-    threadMessages.set(threadId, messages);
+    if (questionLower.includes('how many') || questionLower.includes('people') || questionLower.includes('travelers')) {
+        return [
+            { id: 's_1', label: 'Solo', value: 'just me, solo travel' },
+            { id: 's_2', label: '2 people', value: '2 people' },
+            { id: 's_3', label: 'Family', value: 'family with kids' },
+            { id: 's_4', label: 'Group', value: 'a group of friends' },
+        ];
+    }
 
-    // Stream events with delays
-    let eventIndex = 0;
-    const sendNextEvent = () => {
-        if (eventIndex < events.length) {
-            res.write(JSON.stringify(events[eventIndex]) + '\n');
-            eventIndex++;
-            // Faster for content tokens, slower for structural events
-            const delay = events[eventIndex - 1].event === 'content.token' ? 30 : 100;
-            setTimeout(sendNextEvent, delay);
-        } else {
-            res.end();
-        }
-    };
+    if (questionLower.includes('activities') || questionLower.includes('prefer') || questionLower.includes('type')) {
+        return [
+            { id: 's_1', label: 'Adventure', value: 'adventure and outdoor activities' },
+            { id: 's_2', label: 'Relaxation', value: 'relaxation and beaches' },
+            { id: 's_3', label: 'Cultural', value: 'cultural experiences and history' },
+            { id: 's_4', label: 'Mix', value: 'a mix of everything' },
+        ];
+    }
 
-    sendNextEvent();
-});
+    if (questionLower.includes('duration') || questionLower.includes('how long') || questionLower.includes('days')) {
+        return [
+            { id: 's_1', label: 'Weekend', value: '2-3 days, a weekend trip' },
+            { id: 's_2', label: 'Week', value: 'about a week' },
+            { id: 's_3', label: '2 Weeks', value: 'two weeks' },
+            { id: 's_4', label: 'Longer', value: 'more than 2 weeks' },
+        ];
+    }
+
+    return [];
+}
 
 // Legacy: Send a conversation message (kept for backward compatibility)
 // POST /api/v1/chat/:threadId/conversations

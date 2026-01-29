@@ -9,6 +9,18 @@ export interface TravellerDetail {
     special_notes?: string;
 }
 
+// Plan summary structure (matches AI agent output)
+export interface UserVariable {
+    field_name: string;
+    value: string;  // Value or "NOT_AVAILABLE"
+    type: 'mandatory' | 'optional';
+}
+
+export interface PlanSummary {
+    travel_summary: string;
+    user_variables: UserVariable[];
+}
+
 // Input types
 export interface CreateThreadContextInput {
     threadId: string;
@@ -16,7 +28,7 @@ export interface CreateThreadContextInput {
     currency?: string;
     startDate?: Date;
     endDate?: Date;
-    planSummary?: string;
+    planSummary?: PlanSummary;
     travellersDetails?: TravellerDetail[];
     journeyContext?: string;
     generalInstructions?: string[];
@@ -28,7 +40,7 @@ export interface UpdateThreadContextInput {
     currency?: string;
     startDate?: Date;
     endDate?: Date;
-    planSummary?: string;
+    planSummary?: PlanSummary;
     travellersDetails?: TravellerDetail[];
     journeyContext?: string;
     generalInstructions?: string[];
@@ -65,7 +77,7 @@ class ThreadContextDao {
                 currency: data.currency ?? 'USD',
                 startDate: data.startDate,
                 endDate: data.endDate,
-                planSummary: data.planSummary,
+                planSummary: data.planSummary as any,
                 travellersDetails: data.travellersDetails as any,
                 journeyContext: data.journeyContext,
                 generalInstructions: data.generalInstructions as any,
@@ -89,7 +101,7 @@ class ThreadContextDao {
         if (data.currency !== undefined) updateData.currency = data.currency;
         if (data.startDate !== undefined) updateData.startDate = data.startDate;
         if (data.endDate !== undefined) updateData.endDate = data.endDate;
-        if (data.planSummary !== undefined) updateData.planSummary = data.planSummary;
+        if (data.planSummary !== undefined) updateData.planSummary = data.planSummary as any;
         if (data.travellersDetails !== undefined) {
             updateData.travellersDetails = data.travellersDetails as any;
         }
@@ -124,7 +136,7 @@ class ThreadContextDao {
                 currency: data.currency ?? 'USD',
                 startDate: data.startDate,
                 endDate: data.endDate,
-                planSummary: data.planSummary,
+                planSummary: data.planSummary as any,
                 travellersDetails: data.travellersDetails as any,
                 journeyContext: data.journeyContext,
                 generalInstructions: data.generalInstructions as any,
@@ -135,7 +147,7 @@ class ThreadContextDao {
                 currency: data.currency,
                 startDate: data.startDate,
                 endDate: data.endDate,
-                planSummary: data.planSummary,
+                planSummary: data.planSummary as any,
                 travellersDetails: data.travellersDetails as any,
                 journeyContext: data.journeyContext,
                 generalInstructions: data.generalInstructions as any,

@@ -249,7 +249,7 @@ model ThreadContext {
   currency              String    @default("USD") @db.VarChar(3)
   startDate             DateTime? @map("start_date") @db.Date
   endDate               DateTime? @map("end_date") @db.Date
-  planSummary           String?   @map("plan_summary") @db.Text
+  planSummary           Json?     @map("plan_summary") @db.JsonB
   travellersDetails     Json?     @map("travellers_details") @db.JsonB
   journeyContext        String?   @map("journey_context") @db.Text
   generalInstructions   Json?     @map("general_instructions") @db.JsonB
