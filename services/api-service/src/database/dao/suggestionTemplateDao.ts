@@ -101,6 +101,7 @@ class SuggestionTemplateDao {
     ): Promise<SuggestionTemplate[]> {
         // Use raw SQL for geospatial query
         // This uses the Haversine formula to calculate distance
+        // Note: Raw queries return snake_case column names, so we alias them to camelCase
         const templates = await prisma.$queryRaw<SuggestionTemplate[]>`
       SELECT *
       FROM suggestion_templates

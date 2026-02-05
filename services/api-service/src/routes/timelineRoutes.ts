@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
+import { timelineGenerationService } from '../services/timelineGenerationService';
 
 const router = Router();
 
@@ -134,7 +135,31 @@ router.get('/:travelId', (req: Request, res: Response) => {
     });
 });
 
-// Generate timeline from chat
+// Generate timeline from thread's plan summary
+// POST /api/v1/timelines/:threadId/generate
+router.post('/:threadId/generate', async (req: Request, res: Response) => {
+    const { threadId } = req.params;
+
+    try {
+        const result = await timelineGenerationService.generateAndSaveTimeline(threadId);
+
+        res.json({
+            success: true,
+            data: {
+                timeline_id: result.timelineId,
+                ...result.timeline
+            }
+        });
+    } catch (error: any) {
+        console.error('Timeline generation error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Failed to generate timeline'
+        });
+    }
+});
+
+// Legacy endpoint - Generate timeline from chat (kept for backward compatibility)
 // POST /api/v1/timelines/:travelId
 router.post('/:travelId', (req: Request, res: Response) => {
     const { travelId } = req.params;

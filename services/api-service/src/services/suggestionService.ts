@@ -67,7 +67,7 @@ class SuggestionService {
      */
     async getSuggestionTemplates(req: SuggestionRequest): Promise<SuggestionTemplate[]> {
         const { lat, lng, screenType } = req;
-        const radiusKm = 100; // Configurable radius
+        const radiusKm = 1000; // Configurable radius
 
         // 1. Check database for existing templates near location
         const existingTemplates = await suggestionTemplateDao.findByLocality(lat, lng, radiusKm);
