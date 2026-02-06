@@ -103,7 +103,20 @@ class SuggestionTemplateDao {
         // This uses the Haversine formula to calculate distance
         // Note: Raw queries return snake_case column names, so we alias them to camelCase
         const templates = await prisma.$queryRaw<SuggestionTemplate[]>`
-      SELECT *
+      SELECT 
+        id,
+        priority,
+        template_text AS "templateText",
+        description,
+        display_type AS "displayType",
+        category,
+        locality_lat AS "localityLat",
+        locality_lng AS "localityLng",
+        locality_radius_km AS "localityRadiusKm",
+        placeholder_options AS "placeholderOptions",
+        is_active AS "isActive",
+        created_at AS "createdAt",
+        updated_at AS "updatedAt"
       FROM suggestion_templates
       WHERE is_active = true
         AND locality_lat IS NOT NULL
