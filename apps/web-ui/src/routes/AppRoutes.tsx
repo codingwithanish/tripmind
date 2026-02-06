@@ -4,7 +4,6 @@ import MainLayout from '@/components/layout/MainLayout';
 import Home from '@pages/Home';
 import Chat from '@pages/Chat';
 import Timeline from '@pages/Timeline';
-import TimelineTest from '@pages/TimelineTest';
 import MyTravels from '@pages/MyTravels';
 import Login, { AuthCallback, Signup } from '@pages/Auth';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
@@ -23,7 +22,6 @@ const AppRoutes: React.FC = () => {
         <Route path={ROUTES.CHAT_ROOM} element={<Chat />} />
         <Route path={ROUTES.TIMELINE} element={<Timeline />} />
         <Route path={ROUTES.TIMELINE_ROOM} element={<Timeline />} />
-        <Route path="/timeline-test" element={<TimelineTest />} />
         <Route path={ROUTES.MY_TRAVELS} element={
           <ProtectedRoute>
             <MyTravels />

@@ -1,9 +1,11 @@
-/* MyTravels.css - Styling for the My Travels page */
+/* MyTravels.css - Glassmorphic Theme */
 
 .my-travels-container {
     max-width: 900px;
     margin: 0 auto;
     padding: 2rem;
+    position: relative;
+    z-index: 1;
 }
 
 /* Header */
@@ -14,13 +16,13 @@
 .my-travels-title {
     font-size: 2rem;
     font-weight: 700;
-    color: var(--text-primary, #1f2937);
+    color: var(--text-primary);
     margin: 0 0 0.5rem 0;
 }
 
 .my-travels-subtitle {
     font-size: 1rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--text-secondary);
     margin: 0;
 }
 
@@ -30,30 +32,33 @@
     gap: 0.5rem;
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
-    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    border-bottom: 1px solid var(--border-color);
     flex-wrap: wrap;
 }
 
 .filter-tab {
     padding: 0.5rem 1rem;
-    border: none;
-    background: transparent;
+    border: 1px solid transparent;
+    background: var(--glass-bg);
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--text-secondary, #6b7280);
+    color: var(--text-secondary);
     cursor: pointer;
-    border-radius: 20px;
-    transition: all 0.2s ease;
+    border-radius: var(--radius-full);
+    transition: all var(--transition-base);
 }
 
 .filter-tab:hover {
-    background: var(--bg-tertiary, #f3f4f6);
-    color: var(--text-primary, #1f2937);
+    background: var(--glass-bg-dark);
+    color: var(--text-primary);
+    border-color: var(--glass-border);
 }
 
 .filter-tab.active {
-    background: var(--primary-color, #3b82f6);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
     color: white;
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-glow);
 }
 
 /* Content Area */
@@ -68,14 +73,14 @@
     align-items: center;
     justify-content: center;
     padding: 4rem 2rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--text-secondary);
 }
 
 .loading-spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid var(--border-color, #e5e7eb);
-    border-top-color: var(--primary-color, #3b82f6);
+    border: 3px solid var(--border-color);
+    border-top-color: var(--color-primary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
     margin-bottom: 1rem;
@@ -95,7 +100,7 @@
     justify-content: center;
     padding: 4rem 2rem;
     text-align: center;
-    color: var(--text-secondary, #6b7280);
+    color: var(--text-secondary);
 }
 
 .my-travels-error p {
@@ -104,18 +109,19 @@
 
 .retry-button {
     padding: 0.75rem 1.5rem;
-    background: var(--primary-color, #3b82f6);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     font-size: 0.875rem;
     font-weight: 500;
     cursor: pointer;
-    transition: background-color 0.2s ease;
+    transition: all var(--transition-base);
 }
 
 .retry-button:hover {
-    background: var(--primary-hover, #2563eb);
+    box-shadow: var(--shadow-glow);
+    transform: translateY(-1px);
 }
 
 /* Empty State */
@@ -131,13 +137,13 @@
 .empty-title {
     font-size: 1.25rem;
     font-weight: 600;
-    color: var(--text-primary, #1f2937);
+    color: var(--text-primary);
     margin: 0 0 0.5rem 0;
 }
 
 .empty-subtitle {
     font-size: 0.875rem;
-    color: var(--text-secondary, #6b7280);
+    color: var(--text-secondary);
     margin: 0;
 }
 
@@ -156,23 +162,24 @@
     gap: 1rem;
     margin-top: 2rem;
     padding-top: 1.5rem;
-    border-top: 1px solid var(--border-color, #e5e7eb);
+    border-top: 1px solid var(--border-color);
 }
 
 .pagination-btn {
     padding: 0.5rem 1rem;
-    background: var(--bg-secondary, #ffffff);
-    border: 1px solid var(--border-color, #e5e7eb);
-    border-radius: 6px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--text-primary, #1f2937);
+    color: var(--text-primary);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--transition-base);
 }
 
 .pagination-btn:hover:not(:disabled) {
-    background: var(--bg-tertiary, #f3f4f6);
+    background: var(--glass-bg-dark);
+    border-color: var(--glass-border-hover);
 }
 
 .pagination-btn:disabled {
@@ -192,23 +199,24 @@
     align-items: center;
     justify-content: center;
     background: transparent;
-    border: 1px solid var(--border-color, #e5e7eb);
-    border-radius: 6px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--text-primary, #1f2937);
+    color: var(--text-primary);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all var(--transition-base);
 }
 
 .pagination-page:hover {
-    background: var(--bg-tertiary, #f3f4f6);
+    background: var(--glass-bg);
 }
 
 .pagination-page.active {
-    background: var(--primary-color, #3b82f6);
-    border-color: var(--primary-color, #3b82f6);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+    border-color: var(--color-primary);
     color: white;
+    box-shadow: var(--shadow-glow);
 }
 
 /* Responsive Design */

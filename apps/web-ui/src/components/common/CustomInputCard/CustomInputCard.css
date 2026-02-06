@@ -1,25 +1,27 @@
-/* Custom Input Card Styles */
+/* Custom Input Card Styles - Glassmorphic Theme */
 .custom-input-card {
   display: flex;
   align-items: stretch;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
-  border: 2px dashed var(--border-color);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 2px dashed var(--glass-border);
   border-radius: var(--radius-xl);
   overflow: hidden;
   transition: all var(--transition-base);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-lg);
 }
 
 .custom-input-card:hover {
-  border-color: var(--color-primary-light);
-  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.12), 0 4px 12px rgba(0, 0, 0, 0.06);
+  border-color: var(--glass-border-hover);
+  box-shadow: var(--shadow-glow-soft), var(--shadow-lg);
   transform: translateY(-2px);
 }
 
 .custom-input-card:focus-within {
   border-color: var(--color-primary);
   border-style: solid;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15), 0 8px 24px rgba(59, 130, 246, 0.12);
+  box-shadow: 0 0 0 3px rgba(67, 135, 244, 0.15), var(--shadow-glow-soft);
 }
 
 .custom-input-wrapper {
@@ -72,21 +74,24 @@
 }
 
 @keyframes blink {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0;
   }
 }
 
 /* Rectangle arrow button */
-.suggestion-arrow {
+.custom-input-card .suggestion-arrow {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 60px;
-  background: var(--bg-tertiary);
+  background: var(--glass-bg);
   color: var(--text-tertiary);
   cursor: not-allowed;
   transition: all var(--transition-base);
@@ -95,21 +100,21 @@
   border-left: 1px solid var(--border-color);
 }
 
-.suggestion-arrow.enabled {
+.custom-input-card .suggestion-arrow.enabled {
   background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   color: white;
   cursor: pointer;
 }
 
-.suggestion-arrow.enabled:hover {
+.custom-input-card .suggestion-arrow.enabled:hover {
   background: linear-gradient(135deg, var(--color-primary-dark) 0%, #1d4ed8 100%);
 }
 
-.suggestion-arrow.enabled:active {
+.custom-input-card .suggestion-arrow.enabled:active {
   transform: scale(0.98);
 }
 
-.suggestion-arrow.disabled {
+.custom-input-card .suggestion-arrow.disabled {
   opacity: 0.5;
 }
 
@@ -129,11 +134,11 @@
     left: 1rem;
   }
 
-  .suggestion-arrow {
+  .custom-input-card .suggestion-arrow {
     width: 50px;
   }
 
-  .suggestion-arrow svg {
+  .custom-input-card .suggestion-arrow svg {
     width: 20px;
     height: 20px;
   }

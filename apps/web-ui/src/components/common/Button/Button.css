@@ -12,7 +12,6 @@
 
 .btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
 }
 
 .btn:active:not(:disabled) {
@@ -26,40 +25,55 @@
 
 /* Variants */
 .btn-primary {
-  background-color: var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
-  background-color: var(--color-primary-dark);
+  box-shadow: var(--shadow-glow);
 }
 
 .btn-secondary {
-  background-color: var(--color-secondary);
+  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secondary-dark) 100%);
   color: white;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background-color: var(--color-secondary-dark);
+  box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
 }
 
 .btn-outline {
-  background-color: transparent;
-  border: 1px solid var(--border-color);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
   color: var(--text-primary);
 }
 
 .btn-outline:hover:not(:disabled) {
-  background-color: var(--bg-secondary);
+  background: var(--glass-bg-dark);
+  border-color: var(--glass-border-hover);
+}
+
+.btn-glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+}
+
+.btn-glass:hover:not(:disabled) {
+  border-color: var(--glass-border-hover);
+  box-shadow: var(--shadow-glow-soft);
 }
 
 .btn-danger {
-  background-color: var(--color-error);
+  background: linear-gradient(135deg, var(--color-error) 0%, #dc2626 100%);
   color: white;
 }
 
 .btn-danger:hover:not(:disabled) {
-  background-color: #dc2626;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
 }
 
 /* Sizes */

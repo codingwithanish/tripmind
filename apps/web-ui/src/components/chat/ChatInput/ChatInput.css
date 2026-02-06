@@ -1,6 +1,8 @@
 .chat-input {
-    background: var(--bg-primary);
-    border-top: 1px solid var(--border-color);
+    background: var(--glass-bg-dark);
+    backdrop-filter: blur(var(--glass-blur-strong));
+    -webkit-backdrop-filter: blur(var(--glass-blur-strong));
+    border-top: 1px solid var(--glass-border);
     padding: var(--spacing-md) var(--spacing-lg);
 }
 
@@ -10,8 +12,8 @@
     gap: var(--spacing-sm);
     max-width: 900px;
     margin: 0 auto;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius-2xl);
     padding: var(--spacing-sm);
     transition: border-color var(--transition-base), box-shadow var(--transition-base);
@@ -19,7 +21,7 @@
 
 .chat-input__container:focus-within {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    box-shadow: 0 0 0 3px rgba(67, 135, 244, 0.15);
 }
 
 .chat-input__field {
@@ -55,8 +57,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #1f2937;
-    border: none;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius-full);
     cursor: not-allowed;
     transition: all var(--transition-slow);
@@ -69,11 +71,11 @@
 }
 
 .chat-input__progress-ring-bg {
-    stroke: #374151;
+    stroke: var(--border-color);
 }
 
 .chat-input__progress-ring-progress {
-    stroke: #6b7280;
+    stroke: var(--text-tertiary);
     transition: stroke-dashoffset 0.5s ease-out, stroke 0.3s ease;
     stroke-linecap: round;
 }
@@ -81,13 +83,14 @@
 .chat-input__planning-icon {
     position: relative;
     z-index: 1;
-    color: #9ca3af;
+    color: var(--text-tertiary);
     transition: color var(--transition-base);
 }
 
 /* Ready state - 100% progress */
 .chat-input__planning-btn--ready {
     background: linear-gradient(135deg, var(--color-secondary), var(--color-secondary-dark));
+    border-color: transparent;
     cursor: pointer;
     box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
     animation: readyPulse 2s ease-in-out infinite;
@@ -136,14 +139,14 @@
     background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
     border: none;
     border-radius: var(--radius-full);
-    color: var(--text-inverse);
+    color: white;
     cursor: pointer;
     transition: all var(--transition-base);
 }
 
 .chat-input__send-btn:hover:not(:disabled) {
     transform: scale(1.05);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-glow);
 }
 
 .chat-input__send-btn:active:not(:disabled) {
