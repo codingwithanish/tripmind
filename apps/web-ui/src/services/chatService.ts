@@ -8,7 +8,6 @@ import {
   StreamOptions,
   ChatMessage,
   MessagesResponse,
-  SuggestionsResponse,
   NewChatResponse,
   SuggestionItem,
 } from '../types/streamTypes';
@@ -41,6 +40,7 @@ export interface StreamEventHandlers {
   onContentData?: (contentId: string, contentType: string, data: unknown) => void;
   onContentEnd?: (contentId: string) => void;
   onSuggestions?: (items: SuggestionItem[]) => void;
+  onPlanStatus?: (planReady: boolean, progress: number, planSummary: string) => void;
   onMessageEnd?: (messageId: string) => void;
   onError?: (error: Error) => void;
   onComplete?: () => void;
@@ -78,12 +78,7 @@ const chatService = {
     return response.data;
   },
 
-  // Get suggestions for a thread
-  // GET /api/v1/chat/:userId/:threadId/suggestions
-  getSuggestions: async (userId: string, threadId: string): Promise<SuggestionsResponse> => {
-    const response = await api.get<SuggestionsResponse>(`/chat/${userId}/${threadId}/suggestions`);
-    return response.data;
-  },
+
 
   // Stream chat message with event-based protocol
   // POST /api/v1/chat/:userId/:threadId/stream
@@ -184,6 +179,9 @@ const chatService = {
         break;
       case 'suggestions':
         handlers.onSuggestions?.(event.items);
+        break;
+      case 'plan_status':
+        handlers.onPlanStatus?.(event.plan_ready, event.progress, event.plan_summary);
         break;
       case 'message.end':
         handlers.onMessageEnd?.(event.message_id);

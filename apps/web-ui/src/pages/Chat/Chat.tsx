@@ -84,17 +84,24 @@ const Chat: React.FC = () => {
                 setIsInitialized(true);
                 setError(null);
 
-                // Also load suggestions
-                try {
-                    const suggestionsResponse = await chatService.getSuggestions(userId, threadId);
-                    setSuggestions(suggestionsResponse.suggestions.map(s => ({
-                        id: s.id,
-                        label: s.label,
-                        value: s.value,
-                        icon: s.icon,
-                    })));
-                } catch {
-                    // Suggestions are optional, don't block on error
+                // Load suggestions and progress from last assistant message metadata
+                const lastAssistantMsg = response.messages
+                    .filter((m: ChatMessageType) => m.role === 'assistant')
+                    .pop();
+                if (lastAssistantMsg) {
+                    // Get metadata from raw message if available
+                    const msgWithMeta = lastAssistantMsg as ChatMessageType & { metadata?: { suggestions?: SuggestionChip[], progress?: number } };
+                    if (msgWithMeta.metadata?.suggestions) {
+                        setSuggestions(msgWithMeta.metadata.suggestions.map(s => ({
+                            id: s.id,
+                            label: s.label,
+                            value: s.value,
+                            icon: s.icon,
+                        })));
+                    }
+                    if (typeof msgWithMeta.metadata?.progress === 'number') {
+                        setContextProgress(msgWithMeta.metadata.progress);
+                    }
                 }
             } catch (err) {
                 console.error('Failed to load messages:', err);
@@ -167,6 +174,10 @@ const Chat: React.FC = () => {
                 icon: s.icon,
             })));
         },
+        onPlanStatus: (_planReady, progress, _planSummary) => {
+            // Update progress from plan_status event
+            setContextProgress(progress);
+        },
         onMessageEnd: (messageId) => {
             // Finalize the message - use ref for current content
             const finalContent = streamContentRef.current;
@@ -180,9 +191,6 @@ const Chat: React.FC = () => {
             streamContentRef.current = '';
             setCurrentStreamContent('');
             setIsStreaming(false);
-
-            // Update progress
-            setContextProgress(prev => Math.min(prev + 20, 100));
         },
         onError: (err) => {
             console.error('Streaming error:', err);

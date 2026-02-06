@@ -8,6 +8,23 @@ interface SuggestionRequest {
     screenType: 'mobile' | 'desktop';
 }
 
+// Chat suggestion types
+export interface ChatSuggestionItem {
+    id: string;
+    label: string;
+    value: string;
+    icon?: { provider: string; name: string };
+    type?: string;
+    payload?: Record<string, unknown>;
+}
+
+export interface ChatSuggestionInput {
+    conversation_context: string;
+    plan_summary?: string;
+    next_question: string;
+    progress: number;
+}
+
 class SuggestionService {
     private readonly AI_SERVICE_URL = env.AI_SERVICE_URL;
 
@@ -124,6 +141,135 @@ class SuggestionService {
 
         return newTemplates;
     }
+
+    // =========================================================================
+    // Chat Suggestion Methods - for streaming chat context
+    // =========================================================================
+
+    /**
+     * Call AI service to get chat suggestions based on conversation context
+     */
+    async getChatSuggestions(input: ChatSuggestionInput): Promise<ChatSuggestionItem[]> {
+        try {
+            const response = await fetch(`${this.AI_SERVICE_URL}/execute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    agent_name: 'suggestion_agent',
+                    input_payload: input,
+                }),
+            });
+
+            if (!response.ok) {
+                console.error(`Suggestion agent error: ${response.statusText}`);
+                return [];
+            }
+
+            const result = await response.json() as any;
+
+            if (result.status === 'success' && result.output?.suggestions) {
+                return result.output.suggestions.map((s: any, index: number) => ({
+                    id: s.id || `s_${index + 1}`,
+                    label: s.label || s.title,
+                    value: s.value || s.label || s.title,
+                    icon: s.icon,
+                    type: s.type || 'chip',
+                    payload: s.payload,
+                }));
+            }
+
+            return [];
+        } catch (error) {
+            console.error('Error calling suggestion agent:', error);
+            return [];
+        }
+    }
+
+    /**
+     * Generate chat suggestions based on the conversation context
+     * Falls back to rule-based suggestions if AI service fails
+     */
+    async generateChatSuggestions(
+        conversationHistory: Array<{ role: string; content: string }>,
+        planSummary: string | undefined,
+        nextQuestion: string,
+        progress: number
+    ): Promise<ChatSuggestionItem[]> {
+        // Build conversation context string
+        const conversationContext = conversationHistory
+            .slice(-5) // Last 5 messages
+            .map(m => `${m.role}: ${m.content}`)
+            .join('\n');
+
+        // Try AI service first
+        const aiSuggestions = await this.getChatSuggestions({
+            conversation_context: conversationContext,
+            plan_summary: planSummary,
+            next_question: nextQuestion,
+            progress,
+        });
+
+        if (aiSuggestions.length > 0) {
+            return aiSuggestions;
+        }
+
+        // Fallback to rule-based suggestions
+        return this.getFallbackSuggestions(nextQuestion);
+    }
+
+    /**
+     * Rule-based fallback suggestions when AI service is unavailable
+     */
+    private getFallbackSuggestions(nextQuestion: string): ChatSuggestionItem[] {
+        const questionLower = nextQuestion.toLowerCase();
+
+        if (questionLower.includes('when') || questionLower.includes('date') || questionLower.includes('travel')) {
+            return [
+                { id: 's_1', label: 'This week', value: 'this week' },
+                { id: 's_2', label: 'Next month', value: 'next month' },
+                { id: 's_3', label: 'In 3 months', value: 'in about 3 months' },
+                { id: 's_4', label: 'Flexible', value: 'I am flexible with dates' },
+            ];
+        }
+
+        if (questionLower.includes('budget') || questionLower.includes('spend')) {
+            return [
+                { id: 's_1', label: 'Budget', value: 'budget-friendly, under $1000' },
+                { id: 's_2', label: 'Mid-range', value: 'mid-range, around $2000-5000' },
+                { id: 's_3', label: 'Luxury', value: 'luxury, no budget limit' },
+            ];
+        }
+
+        if (questionLower.includes('how many') || questionLower.includes('people') || questionLower.includes('travelers')) {
+            return [
+                { id: 's_1', label: 'Solo', value: 'just me, solo travel' },
+                { id: 's_2', label: '2 people', value: '2 people' },
+                { id: 's_3', label: 'Family', value: 'family with kids' },
+                { id: 's_4', label: 'Group', value: 'a group of friends' },
+            ];
+        }
+
+        if (questionLower.includes('activities') || questionLower.includes('prefer') || questionLower.includes('type')) {
+            return [
+                { id: 's_1', label: 'Adventure', value: 'adventure and outdoor activities' },
+                { id: 's_2', label: 'Relaxation', value: 'relaxation and beaches' },
+                { id: 's_3', label: 'Cultural', value: 'cultural experiences and history' },
+                { id: 's_4', label: 'Mix', value: 'a mix of everything' },
+            ];
+        }
+
+        if (questionLower.includes('duration') || questionLower.includes('how long') || questionLower.includes('days')) {
+            return [
+                { id: 's_1', label: 'Weekend', value: '2-3 days, a weekend trip' },
+                { id: 's_2', label: 'Week', value: 'about a week' },
+                { id: 's_3', label: '2 Weeks', value: 'two weeks' },
+                { id: 's_4', label: 'Longer', value: 'more than 2 weeks' },
+            ];
+        }
+
+        return [];
+    }
 }
 
 export default new SuggestionService();
+

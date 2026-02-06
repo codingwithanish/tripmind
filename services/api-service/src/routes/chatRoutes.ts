@@ -4,6 +4,7 @@ import chatService from '../services/chatService';
 import threadDao from '../database/dao/threadDao';
 import messageDao from '../database/dao/messageDao';
 import threadContextDao, { PlanSummary } from '../database/dao/threadContextDao';
+import suggestionService, { ChatSuggestionItem } from '../services/suggestionService';
 
 const router = Router();
 
@@ -142,64 +143,6 @@ router.get('/:userId/:threadId/messages', async (req: Request, res: Response) =>
     }
 });
 
-// Get suggestions for a thread
-// GET /api/v1/chat/:userId/:threadId/suggestions
-router.get('/:userId/:threadId/suggestions', async (req: Request, res: Response) => {
-    const { userId, threadId } = req.params;
-
-    try {
-        // Get current progress from thread
-        const thread = await threadDao.findById(threadId);
-        const progress = thread?.timelineReadyProgress || 0;
-
-        // Generate contextual suggestions based on progress
-        const suggestionSets = [
-            // Initial suggestions (0% progress)
-            [
-                { id: 's_1', type: 'chip', label: 'This week', icon: { provider: 'iconify', name: 'mdi:calendar' }, value: 'this_week', payload: { time: 'this_week' } },
-                { id: 's_2', type: 'chip', label: 'Next month', icon: { provider: 'iconify', name: 'mdi:calendar-clock' }, value: 'next_month', payload: { time: 'next_month' } },
-                { id: 's_3', type: 'chip', label: 'Flexible', icon: { provider: 'iconify', name: 'mdi:calendar-question' }, value: 'flexible', payload: { time: 'flexible' } },
-            ],
-            // 20% progress - budget
-            [
-                { id: 's_1', type: 'chip', label: 'Budget', icon: { provider: 'iconify', name: 'mdi:cash' }, value: 'budget', payload: { budget_type: 'budget' } },
-                { id: 's_2', type: 'chip', label: 'Mid-range', icon: { provider: 'iconify', name: 'mdi:cash-multiple' }, value: 'midrange', payload: { budget_type: 'midrange' } },
-                { id: 's_3', type: 'chip', label: 'Luxury', icon: { provider: 'iconify', name: 'mdi:star' }, value: 'luxury', payload: { budget_type: 'luxury' } },
-            ],
-            // 40% progress - travelers
-            [
-                { id: 's_1', type: 'chip', label: 'Solo', icon: { provider: 'iconify', name: 'mdi:account' }, value: 'solo', payload: { travelers: 'solo' } },
-                { id: 's_2', type: 'chip', label: 'Couple', icon: { provider: 'iconify', name: 'mdi:account-multiple' }, value: 'couple', payload: { travelers: 'couple' } },
-                { id: 's_3', type: 'chip', label: 'Family', icon: { provider: 'iconify', name: 'mdi:account-group' }, value: 'family', payload: { travelers: 'family' } },
-            ],
-            // 60% progress - activities
-            [
-                { id: 's_1', type: 'chip', label: 'Adventure', icon: { provider: 'iconify', name: 'mdi:hiking' }, value: 'adventure', payload: { activity: 'adventure' } },
-                { id: 's_2', type: 'chip', label: 'Relaxation', icon: { provider: 'iconify', name: 'mdi:beach' }, value: 'relaxation', payload: { activity: 'relaxation' } },
-                { id: 's_3', type: 'chip', label: 'Cultural', icon: { provider: 'iconify', name: 'mdi:museum' }, value: 'cultural', payload: { activity: 'cultural' } },
-            ],
-        ];
-
-        const suggestionIndex = Math.min(Math.floor(progress / 20), suggestionSets.length - 1);
-        const suggestions = suggestionSets[suggestionIndex];
-
-        res.json({
-            thread_id: threadId,
-            user_id: userId,
-            suggestions,
-            expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes
-        });
-    } catch (error) {
-        console.error('Error fetching suggestions:', error);
-        res.json({
-            thread_id: threadId,
-            user_id: userId,
-            suggestions: [],
-            expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-        });
-    }
-});
-
 // Event-based streaming chat
 // POST /api/v1/chat/:userId/:threadId/stream
 router.post('/:userId/:threadId/stream', async (req: Request, res: Response) => {
@@ -266,11 +209,27 @@ router.post('/:userId/:threadId/stream', async (req: Request, res: Response) => 
         }
         await threadDao.updateProgress(threadId, progress);
 
-        // Store AI response in database
+        // Generate suggestions using the suggestion service
+        let suggestionItems: ChatSuggestionItem[] = [];
+        if (options?.enable_suggestions !== false) {
+            suggestionItems = await suggestionService.generateChatSuggestions(
+                conversationHistory,
+                agentResponse.planSummary?.travel_summary,
+                agentResponse.nextQuestion,
+                progress
+            );
+        }
+
+        // Store AI response in database with suggestions in metadata
         const aiMessage = await messageDao.createAssistantMessage(
             threadId,
             agentResponse.responseMessage,
-            'markdown'
+            'markdown',
+            {
+                suggestions: suggestionItems.length > 0 ? suggestionItems : undefined,
+                plan_ready: agentResponse.planReady,
+                progress: progress,
+            }
         );
 
         // Build streaming events
@@ -304,12 +263,9 @@ router.post('/:userId/:threadId/stream', async (req: Request, res: Response) => 
             plan_summary: agentResponse.planSummary.travel_summary
         });
 
-        // Add suggestions if enabled and plan is not ready
-        if (options?.enable_suggestions !== false && !agentResponse.planReady) {
-            const suggestionItems = generateSuggestions(agentResponse.nextQuestion);
-            if (suggestionItems.length > 0) {
-                events.push({ event: 'suggestions', items: suggestionItems });
-            }
+        // Add suggestions if any were generated
+        if (suggestionItems.length > 0) {
+            events.push({ event: 'suggestions', items: suggestionItems });
         }
 
         events.push({ event: 'message.end', message_id: aiMsgId });
@@ -340,56 +296,6 @@ router.post('/:userId/:threadId/stream', async (req: Request, res: Response) => 
     }
 });
 
-// Helper function to generate contextual suggestions based on agent's next question
-function generateSuggestions(nextQuestion: string): Array<{ id: string; label: string; value: string }> {
-    const questionLower = nextQuestion.toLowerCase();
-
-    if (questionLower.includes('when') || questionLower.includes('date') || questionLower.includes('travel')) {
-        return [
-            { id: 's_1', label: 'This week', value: 'this week' },
-            { id: 's_2', label: 'Next month', value: 'next month' },
-            { id: 's_3', label: 'In 3 months', value: 'in about 3 months' },
-            { id: 's_4', label: 'Flexible', value: 'I am flexible with dates' },
-        ];
-    }
-
-    if (questionLower.includes('budget') || questionLower.includes('spend')) {
-        return [
-            { id: 's_1', label: 'Budget', value: 'budget-friendly, under $1000' },
-            { id: 's_2', label: 'Mid-range', value: 'mid-range, around $2000-5000' },
-            { id: 's_3', label: 'Luxury', value: 'luxury, no budget limit' },
-        ];
-    }
-
-    if (questionLower.includes('how many') || questionLower.includes('people') || questionLower.includes('travelers')) {
-        return [
-            { id: 's_1', label: 'Solo', value: 'just me, solo travel' },
-            { id: 's_2', label: '2 people', value: '2 people' },
-            { id: 's_3', label: 'Family', value: 'family with kids' },
-            { id: 's_4', label: 'Group', value: 'a group of friends' },
-        ];
-    }
-
-    if (questionLower.includes('activities') || questionLower.includes('prefer') || questionLower.includes('type')) {
-        return [
-            { id: 's_1', label: 'Adventure', value: 'adventure and outdoor activities' },
-            { id: 's_2', label: 'Relaxation', value: 'relaxation and beaches' },
-            { id: 's_3', label: 'Cultural', value: 'cultural experiences and history' },
-            { id: 's_4', label: 'Mix', value: 'a mix of everything' },
-        ];
-    }
-
-    if (questionLower.includes('duration') || questionLower.includes('how long') || questionLower.includes('days')) {
-        return [
-            { id: 's_1', label: 'Weekend', value: '2-3 days, a weekend trip' },
-            { id: 's_2', label: 'Week', value: 'about a week' },
-            { id: 's_3', label: '2 Weeks', value: 'two weeks' },
-            { id: 's_4', label: 'Longer', value: 'more than 2 weeks' },
-        ];
-    }
-
-    return [];
-}
 
 // Legacy: Send a conversation message (kept for backward compatibility)
 // POST /api/v1/chat/:threadId/conversations

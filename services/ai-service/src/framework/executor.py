@@ -45,7 +45,8 @@ async def execute_agent(
     if is_dummy_mode():
         logger.info(f"Running in DUMMY mode - returning mock data for '{agent_name}'")
         if has_dummy_response(agent_name):
-            dummy_output = get_dummy_response(agent_name)
+            # Pass input_payload for context-aware dummy responses
+            dummy_output = get_dummy_response(agent_name, input_payload)
             return AgentResponse(
                 status="success",
                 agent_name=agent_name,

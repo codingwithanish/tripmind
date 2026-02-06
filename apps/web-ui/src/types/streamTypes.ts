@@ -36,6 +36,13 @@ export interface SuggestionsEvent {
     items: SuggestionItem[];
 }
 
+export interface PlanStatusEvent {
+    event: 'plan_status';
+    plan_ready: boolean;
+    progress: number;
+    plan_summary: string;
+}
+
 export interface MessageEndEvent {
     event: 'message.end';
     message_id: string;
@@ -60,6 +67,7 @@ export type StreamEvent =
     | ContentDataEvent
     | ContentEndEvent
     | SuggestionsEvent
+    | PlanStatusEvent
     | MessageEndEvent;
 
 // Message types for display
