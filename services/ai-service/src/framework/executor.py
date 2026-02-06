@@ -16,6 +16,8 @@ from .errors import (
 )
 from .registry import AgentRegistry
 from .schemas import AgentResponse
+from ..config import is_dummy_mode, get_execution_mode
+from ..dummy_data import get_dummy_response, has_dummy_response
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +39,20 @@ async def execute_agent(
         AgentResponse with either success output or error details
     """
     logger.info(f"Executing agent '{agent_name}' with input: {input_payload}")
+    logger.info(f"Execution mode: {get_execution_mode().value}")
+    
+    # Check if running in dummy mode
+    if is_dummy_mode():
+        logger.info(f"Running in DUMMY mode - returning mock data for '{agent_name}'")
+        if has_dummy_response(agent_name):
+            dummy_output = get_dummy_response(agent_name)
+            return AgentResponse(
+                status="success",
+                agent_name=agent_name,
+                output=dummy_output,
+            )
+        else:
+            logger.warning(f"No dummy response defined for agent '{agent_name}', falling back to actual execution")
     
     try:
         # 1. Get agent from registry

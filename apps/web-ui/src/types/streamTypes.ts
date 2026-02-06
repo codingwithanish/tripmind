@@ -118,4 +118,9 @@ export interface NewChatResponse {
     thread_id: string;
     user_id: string;
     status: string;
+    initial_response?: {
+        message_id: string;
+        content: string;
+        type: string;
+    };
 }
