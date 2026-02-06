@@ -1,276 +1,159 @@
 import { Server, Socket } from 'socket.io';
 import crypto from 'crypto';
+import env from '../config/env';
 
-// Generate dummy timeline data matching frontend's websocket.types.ts
-// Node types: 'start' | 'end' | 'task_node' | 'representation_node'
-// - task_node: contains tasks[], recommendations[] with title, title_image, description, price
-// - representation_node: contains representations[] with id, title, description, icon
-const generateDummyTimeline = (timelineId: string) => {
-    return {
-        timeline_id: timelineId,
-        version: 1,
-        style: 'default',
-        configs: {
-            display_price_unit: 'INR',
-            timezone: 'Asia/Kolkata',
-        },
-        nodes: [
-            // Start node
-            {
-                id: crypto.randomUUID(),
-                node_version: 1,
-                order: 0,
-                type: 'start',
-                subtype: null,
-                display_date: null,
-            },
-            // Task node 1 - Flight booking
-            {
-                id: crypto.randomUUID(),
-                node_version: 1,
-                order: 1,
-                type: 'task_node',
-                subtype: 'default',
-                display_date: {
-                    type: 'date_range',
-                    label: 'Jan 12 - Jan 16',
-                    start: '2026-01-12T12:30:00Z',
-                    end: '2026-01-16T01:30:00Z',
-                },
-                tasks: [
-                    {
-                        id: crypto.randomUUID(),
-                        execution_state: 'pending',
-                        visit_status: 'no_action',
-                        priority: 1,
-                        title: 'Book your flight from COK to SYD',
-                        title_image: 'mdi:airplane-takeoff',
-                        description: 'IndiGo 6E-2034, Departure 6:00 AM on 23 Jan',
-                        price: {
-                            type: 'range',
-                            unit: 'INR',
-                            range: { min: 45000, max: 52000 },
-                        },
-                    },
-                    {
-                        id: crypto.randomUUID(),
-                        execution_state: 'pending',
-                        visit_status: 'no_action',
-                        priority: 2,
-                        title: 'Book hotel at Sydney Harbour for 4 nights',
-                        title_image: 'mdi:bed',
-                        description: 'Sydney Harbour Marriott, Check-in: Jan 24',
-                        price: {
-                            type: 'range',
-                            unit: 'INR',
-                            range: { min: 45000, max: 52000 },
-                        },
-                    },
-                ],
-                recommendations: [
-                    {
-                        id: crypto.randomUUID(),
-                        action_state: 'suggested',
-                        type: 'place',
-                        priority: 1,
-                        title: 'Visit Sydney Opera House for a guided tour',
-                        title_image: 'mdi:camera',
-                        description: 'Tours run hourly, advance booking recommended',
-                        price_included: true,
-                        price_info: {
-                            type: 'confirmed',
-                            unit: 'AUD',
-                            confirmed_price: 42,
-                        },
-                    },
-                    {
-                        id: crypto.randomUUID(),
-                        action_state: 'suggested',
-                        type: 'restaurant',
-                        priority: 2,
-                        title: 'Try the famous Sydney Fish Market',
-                        title_image: 'mdi:food',
-                        description: 'Open daily 7AM-4PM, Pyrmont area',
-                        price_included: true,
-                        price_info: {
-                            type: 'range',
-                            unit: 'AUD',
-                            range: { min: 50, max: 100 },
-                        },
-                    },
-                ],
-            },
-            // Representation node 1 - Weather info (low severity)
-            {
-                id: crypto.randomUUID(),
-                node_version: 1,
-                order: 2,
-                type: 'representation_node',
-                subtype: null,
-                display_date: {
-                    type: 'date',
-                    label: 'Jan 16',
-                    start: '2026-01-16T00:00:00Z',
-                },
-                representations: [
-                    {
-                        id: crypto.randomUUID(),
-                        title: 'Weather Advisory',
-                        description: 'Last year, the temperature at this time dropped to around –1°C, so please be prepared with warm clothing.',
-                        icon: 'mdi:weather-sunny',
-                    },
-                ],
-            },
-            // Task node 2 - Road trip
-            {
-                id: crypto.randomUUID(),
-                node_version: 1,
-                order: 3,
-                type: 'task_node',
-                subtype: 'default',
-                display_date: {
-                    type: 'date',
-                    label: 'Jan 17',
-                    start: '2026-01-17T09:00:00Z',
-                },
-                tasks: [
-                    {
-                        id: crypto.randomUUID(),
-                        execution_state: 'pending',
-                        visit_status: 'no_action',
-                        priority: 1,
-                        title: 'Rent a car for Blue Mountains day trip',
-                        title_image: 'mdi:car-side',
-                        description: 'Pick up from Sydney CBD, return same day',
-                        price: {
-                            type: 'range',
-                            unit: 'AUD',
-                            range: { min: 120, max: 180 },
-                        },
-                    },
-                ],
-                recommendations: [
-                    {
-                        id: crypto.randomUUID(),
-                        action_state: 'suggested',
-                        type: 'place',
-                        priority: 1,
-                        title: 'Visit Three Sisters lookout point',
-                        title_image: 'mdi:binoculars',
-                        description: 'Best views in early morning, free entry',
-                        price_included: false,
-                    },
-                ],
-            },
-            // Representation node 2 - Traffic warning (medium severity)
-            {
-                id: crypto.randomUUID(),
-                node_version: 1,
-                order: 4,
-                type: 'representation_node',
-                subtype: null,
-                display_date: {
-                    type: 'date',
-                    label: 'Jan 17',
-                    start: '2026-01-17T00:00:00Z',
-                },
-                representations: [
-                    {
-                        id: crypto.randomUUID(),
-                        title: 'Traffic Warning',
-                        description: 'Traffic congestion expected on Highway 101. Consider alternative routes or adjust departure time.',
-                        icon: 'mdi:alert',
-                    },
-                ],
-            },
-            // Representation node 3 - Passport urgent (high severity)
-            {
-                id: crypto.randomUUID(),
-                node_version: 1,
-                order: 5,
-                type: 'representation_node',
-                subtype: null,
-                display_date: {
-                    type: 'date',
-                    label: 'Jan 18',
-                    start: '2026-01-18T00:00:00Z',
-                },
-                representations: [
-                    {
-                        id: crypto.randomUUID(),
-                        title: 'Urgent: Passport Renewal Required',
-                        description: 'Important: Passport renewal required before Jan 20. Visit the nearest embassy immediately to avoid travel disruption.',
-                        icon: 'mdi:alert-octagon',
-                    },
-                ],
-            },
-            // Task node 3 - Sydney Harbour activities
-            {
-                id: crypto.randomUUID(),
-                node_version: 1,
-                order: 6,
-                type: 'task_node',
-                subtype: 'default',
-                display_date: {
-                    type: 'date',
-                    label: 'Jan 18',
-                    start: '2026-01-18T10:00:00Z',
-                },
-                tasks: [
-                    {
-                        id: crypto.randomUUID(),
-                        execution_state: 'completed',
-                        visit_status: 'confirmed',
-                        priority: 1,
-                        title: 'Take a ferry ride across Sydney Harbour',
-                        title_image: 'mdi:ferry',
-                        description: 'Circular Quay to Manly Beach',
-                        price: {
-                            type: 'confirmed',
-                            unit: 'AUD',
-                            confirmed_price: 9.20,
-                        },
-                    },
-                    {
-                        id: crypto.randomUUID(),
-                        execution_state: 'pending',
-                        visit_status: 'no_action',
-                        priority: 2,
-                        title: 'Sydney Harbour Bridge Climb',
-                        title_image: 'mdi:bridge',
-                        description: '3.5 hour guided climb experience',
-                        price: {
-                            type: 'confirmed',
-                            unit: 'AUD',
-                            confirmed_price: 388,
-                        },
-                    },
-                ],
-                recommendations: [
-                    {
-                        id: crypto.randomUUID(),
-                        action_state: 'suggested',
-                        type: 'place',
-                        priority: 1,
-                        title: 'Relax at Bondi Beach',
-                        title_image: 'mdi:beach',
-                        description: 'Iconic Australian beach, great for surfing',
-                        price_included: false,
-                    },
-                ],
-            },
-            // End node
-            {
-                id: crypto.randomUUID(),
-                node_version: 1,
-                order: 99,
-                type: 'end',
-                subtype: null,
-                display_date: null,
-            },
-        ],
+// Timeline node types matching frontend websocket.types.ts
+interface TimelineNode {
+    id: string;
+    node_version: number;
+    order: number;
+    type: 'start' | 'end' | 'task_node' | 'representation_node';
+    subtype: string | null;
+    display_date: {
+        type: 'date' | 'date_range' | 'time' | 'time_range';
+        label: string;
+        start?: string;
+        end?: string;
+    } | null;
+    tasks?: any[];
+    recommendations?: any[];
+    representations?: any[];
+}
+
+interface TimelineData {
+    timeline_id: string;
+    version: number;
+    style: string;
+    configs: {
+        display_price_unit: string;
+        timezone: string;
     };
-};
+    nodes: TimelineNode[];
+}
+
+interface AIServiceResponse {
+    status: 'success' | 'error';
+    output?: {
+        style: string;
+        configs: {
+            display_price_unit: string;
+            timezone: string;
+        };
+        nodes: TimelineNode[];
+    };
+    reason?: string;
+}
+
+// Delay utility for streaming nodes
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Fetch timeline from AI service
+async function fetchTimelineFromAI(timelineId: string): Promise<TimelineData> {
+    try {
+        console.log(`Fetching timeline from AI service for: ${timelineId}`);
+
+        const response = await fetch(`${env.AI_SERVICE_URL}/execute`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                agent_name: 'timeline_generation_agent',
+                input_payload: {
+                    plan_summary: {
+                        travel_summary: 'Sample travel plan',
+                        user_variables: [
+                            { field_name: 'destination', value: 'Tokyo, Japan', type: 'mandatory' },
+                            { field_name: 'travel_dates', value: 'March 2026', type: 'mandatory' },
+                            { field_name: 'number_of_travelers', value: '2 (couple)', type: 'mandatory' },
+                            { field_name: 'budget', value: 'Mid-range (~$8000)', type: 'mandatory' },
+                        ]
+                    }
+                }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`AI Service error: ${response.statusText}`);
+        }
+
+        const result = await response.json() as AIServiceResponse;
+
+        if (result.status === 'success' && result.output) {
+            return {
+                timeline_id: timelineId,
+                version: 1,
+                style: result.output.style,
+                configs: result.output.configs,
+                nodes: result.output.nodes.map((node) => ({
+                    ...node,
+                    id: node.id || crypto.randomUUID(),
+                    node_version: node.node_version || 1,
+                })),
+            };
+        }
+
+        throw new Error(result.reason || 'Unknown error from AI Service');
+    } catch (error) {
+        console.error('Error fetching timeline from AI:', error);
+        throw error;
+    }
+}
+
+// Stream timeline nodes with delay for loading effect
+async function streamTimelineToSocket(
+    socket: Socket,
+    timelineId: string,
+    nodes: TimelineNode[],
+    configs: { display_price_unit: string; timezone: string },
+    style: string
+): Promise<void> {
+    let version = 1;
+
+    // Sort nodes by order
+    const sortedNodes = [...nodes].sort((a, b) => a.order - b.order);
+
+    // Emit loading indicator
+    socket.emit('loading');
+
+    // Small delay before starting
+    await delay(300);
+
+    // Stream each node with a delay
+    for (const node of sortedNodes) {
+        version++;
+
+        socket.emit('new-node', {
+            type: 'new-node',
+            data: {
+                timeline_id: timelineId,
+                version,
+                node: {
+                    ...node,
+                    position: {
+                        after_node_id: sortedNodes[sortedNodes.indexOf(node) - 1]?.id,
+                    },
+                },
+            },
+        });
+
+        // Add delay between nodes for loading effect (200-400ms)
+        await delay(200 + Math.random() * 200);
+    }
+
+    // Small delay before complete
+    await delay(200);
+
+    // Finally send complete timeline
+    socket.emit('complete-timeline', {
+        type: 'complete-timeline',
+        data: {
+            timeline_id: timelineId,
+            version,
+            style,
+            configs,
+            nodes: sortedNodes,
+        },
+    });
+}
 
 export const setupTimelineSocket = (io: Server) => {
     const timelineNamespace = io.of('/timeline');
@@ -279,27 +162,55 @@ export const setupTimelineSocket = (io: Server) => {
         console.log(`Timeline socket connected: ${socket.id}`);
 
         // Handle join timeline room
-        socket.on('join-timeline', (data: { timeline_id: string }) => {
+        socket.on('join-timeline', async (data: { timeline_id: string }) => {
             const { timeline_id } = data;
             socket.join(timeline_id);
             console.log(`Socket ${socket.id} joined timeline: ${timeline_id}`);
 
-            // Send complete timeline data
-            const timelineData = generateDummyTimeline(timeline_id);
-            socket.emit('complete-timeline', {
-                type: 'complete-timeline',
-                data: timelineData,
-            });
+            try {
+                // Fetch timeline from AI service
+                const timelineData = await fetchTimelineFromAI(timeline_id);
+
+                // Stream nodes with loading effect
+                await streamTimelineToSocket(
+                    socket,
+                    timeline_id,
+                    timelineData.nodes,
+                    timelineData.configs,
+                    timelineData.style
+                );
+            } catch (error) {
+                console.error('Error loading timeline:', error);
+                // Emit error to client
+                socket.emit('error', {
+                    type: 'error',
+                    message: 'Failed to load timeline. Please try again.',
+                });
+            }
         });
 
         // Handle request for timeline refresh
-        socket.on('request-timeline', (data: { timeline_id: string }) => {
+        socket.on('request-timeline', async (data: { timeline_id: string }) => {
             const { timeline_id } = data;
-            const timelineData = generateDummyTimeline(timeline_id);
-            socket.emit('complete-timeline', {
-                type: 'complete-timeline',
-                data: timelineData,
-            });
+
+            try {
+                const timelineData = await fetchTimelineFromAI(timeline_id);
+
+                // Stream with loading effect on refresh too
+                await streamTimelineToSocket(
+                    socket,
+                    timeline_id,
+                    timelineData.nodes,
+                    timelineData.configs,
+                    timelineData.style
+                );
+            } catch (error) {
+                console.error('Error refreshing timeline:', error);
+                socket.emit('error', {
+                    type: 'error',
+                    message: 'Failed to refresh timeline. Please try again.',
+                });
+            }
         });
 
         // Handle disconnect
@@ -310,3 +221,4 @@ export const setupTimelineSocket = (io: Server) => {
 
     console.log('Timeline WebSocket namespace initialized');
 };
+

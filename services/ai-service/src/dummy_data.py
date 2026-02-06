@@ -257,64 +257,356 @@ def get_suggestion_dummy(input_payload: dict[str, Any]) -> dict[str, Any]:
 def get_timeline_dummy(input_payload: dict[str, Any]) -> dict[str, Any]:
     """
     Get timeline based on the plan summary context.
+    Returns data matching the WebSocket TimelineData format.
     """
+    import uuid
+    
     plan_summary = input_payload.get("plan_summary", {})
     user_vars = plan_summary.get("user_variables", [])
     
     # Extract destination for customization
     dest = "Your Destination"
+    travel_dates = "upcoming"
     for v in user_vars:
         if v.get("field_name") == "destination":
             dest = v.get("value", "Your Destination")
-            break
+        elif v.get("field_name") == "travel_dates":
+            travel_dates = v.get("value", "upcoming")
     
-    # Return different timeline based on destination
+    # Generate base timeline structure matching WebSocket types
+    timeline_data = {
+        "style": "default",
+        "configs": {
+            "display_price_unit": "USD",
+            "timezone": "UTC"
+        },
+        "nodes": []
+    }
+    
+    # Start node
+    timeline_data["nodes"].append({
+        "id": str(uuid.uuid4()),
+        "node_version": 1,
+        "order": 0,
+        "type": "start",
+        "subtype": None,
+        "display_date": None
+    })
+    
+    # Generate nodes based on destination
     if "tokyo" in dest.lower() or "japan" in dest.lower():
-        return {
-            "timeline": {
-                "title": f"7-Day {dest} Adventure",
-                "days": [
-                    {"day_number": 1, "date": "Day 1", "title": "Arrival & Shinjuku", "activities": [
-                        {"type": "transport", "title": "Airport Arrival", "time": "10:00 AM", "description": "Clear customs, take train to hotel"},
-                        {"type": "accommodation", "title": "Hotel Check-in", "time": "2:00 PM", "description": "Rest and recover from flight"},
-                        {"type": "activity", "title": "Shinjuku Gyoen Garden", "time": "4:00 PM", "description": "Beautiful gardens, jet lag recovery"},
-                    ]},
-                    {"day_number": 2, "date": "Day 2", "title": "Akihabara Pop Culture", "activities": [
-                        {"type": "activity", "title": "Akihabara Electric Town", "time": "9:00 AM", "description": "Gaming, anime, electronics paradise"},
-                        {"type": "food", "title": "Themed Café", "time": "12:30 PM", "description": "Unique dining experience"},
-                        {"type": "activity", "title": "teamLab Borderless", "time": "5:00 PM", "description": "Digital art museum"},
-                    ]},
-                    {"day_number": 3, "date": "Day 3", "title": "Traditional Tokyo", "activities": [
-                        {"type": "activity", "title": "Senso-ji Temple", "time": "8:00 AM", "description": "Tokyo's oldest temple"},
-                        {"type": "activity", "title": "Kimono Experience", "time": "11:00 AM", "description": "Traditional dress photo session"},
-                        {"type": "activity", "title": "Tokyo Skytree", "time": "4:00 PM", "description": "360° city views"},
-                    ]},
+        # Tokyo specific timeline
+        timeline_data["nodes"].extend([
+            {
+                "id": str(uuid.uuid4()),
+                "node_version": 1,
+                "order": 1,
+                "type": "task_node",
+                "subtype": "default",
+                "display_date": {
+                    "type": "date_range",
+                    "label": "Day 1-2",
+                    "start": "2026-03-01T00:00:00Z",
+                    "end": "2026-03-02T23:59:00Z"
+                },
+                "tasks": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "execution_state": "pending",
+                        "visit_status": "no_action",
+                        "priority": 1,
+                        "title": "Book flight to Tokyo",
+                        "title_image": "mdi:airplane-takeoff",
+                        "description": "Direct flights available from major cities",
+                        "price": {
+                            "type": "range",
+                            "unit": "USD",
+                            "range": {"min": 800, "max": 1200}
+                        }
+                    },
+                    {
+                        "id": str(uuid.uuid4()),
+                        "execution_state": "pending",
+                        "visit_status": "no_action",
+                        "priority": 2,
+                        "title": "Book hotel in Shinjuku",
+                        "title_image": "mdi:bed",
+                        "description": "Central location, great for exploring",
+                        "price": {
+                            "type": "range",
+                            "unit": "USD",
+                            "range": {"min": 150, "max": 300}
+                        }
+                    }
+                ],
+                "recommendations": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "action_state": "suggested",
+                        "type": "place",
+                        "priority": 1,
+                        "title": "Visit Shinjuku Gyoen Garden",
+                        "title_image": "mdi:flower",
+                        "description": "Beautiful gardens, perfect for jet lag recovery",
+                        "price_included": True,
+                        "price_info": {
+                            "type": "confirmed",
+                            "unit": "JPY",
+                            "confirmed_price": 500
+                        }
+                    }
                 ]
             },
-            "summary": f"A wonderful itinerary exploring the best of {dest}!",
-            "total_days": 7
-        }
+            {
+                "id": str(uuid.uuid4()),
+                "node_version": 1,
+                "order": 2,
+                "type": "representation_node",
+                "subtype": None,
+                "display_date": {
+                    "type": "date",
+                    "label": "Day 3",
+                    "start": "2026-03-03T00:00:00Z"
+                },
+                "representations": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "title": "Weather Advisory",
+                        "description": "March in Tokyo can be chilly. Pack layers and a light jacket.",
+                        "icon": "mdi:weather-partly-cloudy"
+                    }
+                ]
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "node_version": 1,
+                "order": 3,
+                "type": "task_node",
+                "subtype": "default",
+                "display_date": {
+                    "type": "date",
+                    "label": "Day 3",
+                    "start": "2026-03-03T09:00:00Z"
+                },
+                "tasks": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "execution_state": "pending",
+                        "visit_status": "no_action",
+                        "priority": 1,
+                        "title": "Explore Akihabara",
+                        "title_image": "mdi:gamepad-variant",
+                        "description": "Electronics and anime paradise",
+                        "price": None
+                    }
+                ],
+                "recommendations": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "action_state": "suggested",
+                        "type": "restaurant",
+                        "priority": 1,
+                        "title": "Try Ramen at Ichiran",
+                        "title_image": "mdi:noodles",
+                        "description": "Famous tonkotsu ramen chain",
+                        "price_included": True,
+                        "price_info": {
+                            "type": "range",
+                            "unit": "JPY",
+                            "range": {"min": 900, "max": 1500}
+                        }
+                    },
+                    {
+                        "id": str(uuid.uuid4()),
+                        "action_state": "suggested",
+                        "type": "place",
+                        "priority": 2,
+                        "title": "Visit teamLab Borderless",
+                        "title_image": "mdi:palette",
+                        "description": "Immersive digital art museum",
+                        "price_included": True,
+                        "price_info": {
+                            "type": "confirmed",
+                            "unit": "JPY",
+                            "confirmed_price": 3200
+                        }
+                    }
+                ]
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "node_version": 1,
+                "order": 4,
+                "type": "task_node",
+                "subtype": "default",
+                "display_date": {
+                    "type": "date",
+                    "label": "Day 4",
+                    "start": "2026-03-04T09:00:00Z"
+                },
+                "tasks": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "execution_state": "pending",
+                        "visit_status": "no_action",
+                        "priority": 1,
+                        "title": "Visit Senso-ji Temple",
+                        "title_image": "mdi:temple-buddhist",
+                        "description": "Tokyo's oldest temple in Asakusa",
+                        "price": None
+                    }
+                ],
+                "recommendations": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "action_state": "suggested",
+                        "type": "activity",
+                        "priority": 1,
+                        "title": "Try traditional Kimono rental",
+                        "title_image": "mdi:tshirt-crew",
+                        "description": "Walk around Asakusa in traditional attire",
+                        "price_included": True,
+                        "price_info": {
+                            "type": "range",
+                            "unit": "JPY",
+                            "range": {"min": 3000, "max": 5000}
+                        }
+                    }
+                ]
+            }
+        ])
+    else:
+        # Default generic timeline
+        timeline_data["nodes"].extend([
+            {
+                "id": str(uuid.uuid4()),
+                "node_version": 1,
+                "order": 1,
+                "type": "task_node",
+                "subtype": "default",
+                "display_date": {
+                    "type": "date_range",
+                    "label": "Day 1-2",
+                    "start": "2026-03-01T00:00:00Z",
+                    "end": "2026-03-02T23:59:00Z"
+                },
+                "tasks": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "execution_state": "pending",
+                        "visit_status": "no_action",
+                        "priority": 1,
+                        "title": f"Book flight to {dest}",
+                        "title_image": "mdi:airplane-takeoff",
+                        "description": "Search for best deals on flights",
+                        "price": {
+                            "type": "range",
+                            "unit": "USD",
+                            "range": {"min": 500, "max": 1000}
+                        }
+                    },
+                    {
+                        "id": str(uuid.uuid4()),
+                        "execution_state": "pending",
+                        "visit_status": "no_action",
+                        "priority": 2,
+                        "title": "Book accommodation",
+                        "title_image": "mdi:bed",
+                        "description": "Find a hotel or vacation rental",
+                        "price": {
+                            "type": "range",
+                            "unit": "USD",
+                            "range": {"min": 100, "max": 250}
+                        }
+                    }
+                ],
+                "recommendations": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "action_state": "suggested",
+                        "type": "place",
+                        "priority": 1,
+                        "title": "Explore the city center",
+                        "title_image": "mdi:walk",
+                        "description": "Get oriented with your surroundings",
+                        "price_included": False
+                    }
+                ]
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "node_version": 1,
+                "order": 2,
+                "type": "representation_node",
+                "subtype": None,
+                "display_date": {
+                    "type": "date",
+                    "label": "Day 2",
+                    "start": "2026-03-02T00:00:00Z"
+                },
+                "representations": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "title": "Travel Tip",
+                        "description": "Consider getting a local SIM card or portable WiFi for navigation and communication.",
+                        "icon": "mdi:lightbulb"
+                    }
+                ]
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "node_version": 1,
+                "order": 3,
+                "type": "task_node",
+                "subtype": "default",
+                "display_date": {
+                    "type": "date",
+                    "label": "Day 3",
+                    "start": "2026-03-03T09:00:00Z"
+                },
+                "tasks": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "execution_state": "pending",
+                        "visit_status": "no_action",
+                        "priority": 1,
+                        "title": "Visit main attractions",
+                        "title_image": "mdi:camera",
+                        "description": "See the most famous sights",
+                        "price": None
+                    }
+                ],
+                "recommendations": [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "action_state": "suggested",
+                        "type": "restaurant",
+                        "priority": 1,
+                        "title": "Try local cuisine",
+                        "title_image": "mdi:food",
+                        "description": "Sample authentic local dishes",
+                        "price_included": True,
+                        "price_info": {
+                            "type": "range",
+                            "unit": "USD",
+                            "range": {"min": 20, "max": 50}
+                        }
+                    }
+                ]
+            }
+        ])
     
-    # Default generic timeline
-    return {
-        "timeline": {
-            "title": f"Trip to {dest}",
-            "days": [
-                {"day_number": 1, "date": "Day 1", "title": "Arrival Day", "activities": [
-                    {"type": "transport", "title": "Airport Arrival", "time": "10:00 AM", "description": "Arrive and transfer to hotel"},
-                    {"type": "accommodation", "title": "Hotel Check-in", "time": "2:00 PM", "description": "Settle in and rest"},
-                    {"type": "activity", "title": "Explore Neighborhood", "time": "5:00 PM", "description": "Walk around, get oriented"},
-                ]},
-                {"day_number": 2, "date": "Day 2", "title": "Main Attractions", "activities": [
-                    {"type": "activity", "title": "Top Attraction", "time": "9:00 AM", "description": "Visit the most famous site"},
-                    {"type": "food", "title": "Local Lunch", "time": "12:30 PM", "description": "Try local cuisine"},
-                    {"type": "activity", "title": "Cultural Experience", "time": "3:00 PM", "description": "Immerse in local culture"},
-                ]},
-            ]
-        },
-        "summary": f"Your personalized itinerary for {dest}!",
-        "total_days": 7
-    }
+    # End node
+    timeline_data["nodes"].append({
+        "id": str(uuid.uuid4()),
+        "node_version": 1,
+        "order": 99,
+        "type": "end",
+        "subtype": None,
+        "display_date": None
+    })
+    
+    return timeline_data
 
 
 # Static responses for other agents that don't need context

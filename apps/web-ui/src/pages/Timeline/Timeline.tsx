@@ -23,6 +23,7 @@ const Timeline: React.FC = () => {
 
     const [timeline, setTimeline] = useState<TimelineData | null>(null);
     const [isConnected, setIsConnected] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<TabType>('chat');
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -55,15 +56,31 @@ const Timeline: React.FC = () => {
             onError: (err) => {
                 console.error('WebSocket error:', err);
                 setError('Connection error. Retrying...');
+                setIsGenerating(false);
+            },
+            onLoading: () => {
+                console.log('Timeline generation started');
+                setIsGenerating(true);
+                setTimeline(null); // Clear existing timeline for fresh load
             },
             onCompleteTimeline: (event: CompleteTimelineEvent) => {
                 console.log('Received complete timeline:', event.data);
                 setTimeline(event.data);
+                setIsGenerating(false);
                 setError(null);
             },
             onNewNode: (event) => {
                 setTimeline((prev) => {
-                    if (!prev) return prev;
+                    // Initialize timeline if first node received during streaming
+                    if (!prev) {
+                        return {
+                            timeline_id: event.data.timeline_id,
+                            version: event.data.version,
+                            style: 'default',
+                            configs: { display_price_unit: 'USD', timezone: 'UTC' },
+                            nodes: [event.data.node],
+                        };
+                    }
                     const newNode = event.data.node;
                     const nodes = [...prev.nodes, newNode].sort((a, b) => a.order - b.order);
                     return { ...prev, nodes, version: event.data.version };
@@ -178,6 +195,26 @@ const Timeline: React.FC = () => {
     const renderTabContent = () => {
         switch (activeTab) {
             case 'timeline':
+                // Show generating state with enhanced animation
+                if (isGenerating) {
+                    return (
+                        <div className="timeline-generating">
+                            {/* Show partial timeline while loading */}
+                            {timeline && timeline.nodes.length > 0 && (
+                                <TimelineRenderer
+                                    data={timeline}
+                                    onTaskComplete={handleTaskComplete}
+                                    onAdditionalInput={handleAdditionalInput}
+                                    onHelpRequest={handleHelpRequest}
+                                />
+                            )}
+                            <div className="timeline-generating__indicator">
+                                <div className="timeline-generating__spinner" />
+                                <p>Generating your timeline...</p>
+                            </div>
+                        </div>
+                    );
+                }
                 return timeline ? (
                     <TimelineRenderer
                         data={timeline}

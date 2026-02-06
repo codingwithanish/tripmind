@@ -21,6 +21,7 @@ interface TimelineSocketHandlers {
     onAddNodeElement?: EventHandler<AddNodeElementEvent>;
     onUpdateNodeElement?: EventHandler<UpdateNodeElementEvent>;
     onDeleteNodeElement?: EventHandler<DeleteNodeElementEvent>;
+    onLoading?: () => void;
     onConnect?: () => void;
     onDisconnect?: () => void;
     onError?: (error: Error) => void;
@@ -81,6 +82,11 @@ class TimelineWebSocketService {
             console.log('Received complete-timeline event', event);
             this.currentVersion = event.data.version;
             this.handlers.onCompleteTimeline?.(event);
+        });
+
+        this.socket.on('loading', () => {
+            console.log('Timeline loading started');
+            this.handlers.onLoading?.();
         });
 
         this.socket.on('new-node', (event: NewNodeEvent) => {
