@@ -177,6 +177,166 @@ router.post('/:travelId', (req: Request, res: Response) => {
     });
 });
 
+// ===== TIMELINE CHAT ENDPOINTS =====
+
+import messageDao from '../database/dao/messageDao';
+import suggestionService from '../services/suggestionService';
+
+// Get timeline messages (filtered by timeline_generation stage)
+// GET /api/v1/timeline/:threadId/messages
+router.get('/:threadId/messages', async (req: Request, res: Response) => {
+    const { threadId } = req.params;
+    const { limit = '50', before } = req.query;
+
+    try {
+        const limitNum = parseInt(limit as string, 10);
+
+        // Get messages filtered by timeline_generation stage
+        const { messages, total } = await messageDao.findByThreadIdAndStage(
+            threadId,
+            'timeline_generation' as any, // Will work once Prisma client is regenerated
+            1,
+            limitNum + 1
+        );
+
+        // Filter by cursor if provided
+        let filteredMessages = messages;
+        if (before) {
+            const beforeIndex = messages.findIndex(m => m.id === before);
+            if (beforeIndex > 0) {
+                filteredMessages = messages.slice(0, beforeIndex);
+            }
+        }
+
+        // Apply limit
+        const paginatedMessages = filteredMessages.slice(0, limitNum);
+
+        // Determine next cursor
+        const nextCursor = messages.length > limitNum ? messages[limitNum].id : null;
+
+        res.json({
+            messages: paginatedMessages.map(m => ({
+                id: m.id,
+                role: m.role,
+                sender_id: m.senderId,
+                type: m.type,
+                content: m.content,
+                created_at: m.createdAt.toISOString(),
+                status: m.status,
+                help_context: (m as any).helpContext || null,
+            })),
+            next_cursor: nextCursor,
+            total,
+        });
+    } catch (error) {
+        console.error('Error fetching timeline messages:', error);
+        res.json({
+            messages: [],
+            next_cursor: null,
+            total: 0,
+        });
+    }
+});
+
+// Timeline conversation endpoint (with message stage tracking)
+// POST /api/v1/timeline/:threadId/conversations
+router.post('/:threadId/conversations', async (req: Request, res: Response) => {
+    const { threadId } = req.params;
+    const { message, helpContext } = req.body;
+
+    // Extract user ID from JWT token if available
+    const userEmail = (req as any).user?.email as string | undefined;
+    const userId = userEmail || 'anonymous';
+
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Transfer-Encoding', 'chunked');
+
+    try {
+        // Save user message with timeline_generation stage
+        await messageDao.createUserMessage(
+            threadId,
+            userId,
+            message,
+            'markdown',
+            'timeline_generation' as any, // Will work once Prisma client is regenerated
+            helpContext || undefined
+        );
+
+        // Get all timeline_generation messages for context
+        const { messages: dbMessages } = await messageDao.findByThreadIdAndStage(
+            threadId,
+            'timeline_generation' as any,
+            1,
+            50
+        );
+
+        // Build conversation history
+        const conversationHistory = dbMessages.map(msg => ({
+            role: msg.role as 'user' | 'assistant',
+            content: msg.content
+        }));
+
+        // Generate AI response (simplified for now - can be enhanced with timeline-specific agent)
+        const responseMessage = helpContext
+            ? `I see you need help with "${helpContext?.node?.displayTitle || 'this item'}". Let me assist you with that. What specific questions do you have about this part of your timeline?`
+            : `I understand. Based on your timeline, I can help you with this. Would you like me to provide more details or suggest alternatives?`;
+
+        // Generate suggestions
+        const suggestionItems = await suggestionService.generateChatSuggestions(
+            conversationHistory,
+            'Timeline refinement',
+            responseMessage,
+            100
+        );
+
+        // Save AI response with timeline_generation stage
+        await messageDao.createAssistantMessage(
+            threadId,
+            responseMessage,
+            'markdown',
+            {
+                suggestions: suggestionItems.length > 0 ? suggestionItems : undefined,
+            },
+            'timeline_generation' as any
+        );
+
+        // Stream responses
+        const responses: Array<{ type: string; content: string | any[]; timeline_context_collected?: number }> = [];
+
+        responses.push({
+            type: 'chat_response',
+            content: responseMessage,
+            timeline_context_collected: 100,
+        });
+
+        if (suggestionItems.length > 0) {
+            responses.push({
+                type: 'suggestions',
+                content: suggestionItems.map(s => s.label),
+            });
+        }
+
+        let index = 0;
+        const sendNextResponse = () => {
+            if (index < responses.length) {
+                res.write(JSON.stringify(responses[index]) + '\n');
+                index++;
+                setTimeout(sendNextResponse, 100);
+            } else {
+                res.end();
+            }
+        };
+
+        sendNextResponse();
+    } catch (error) {
+        console.error('Error in timeline conversation:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to process conversation',
+        });
+    }
+});
+
 // ===== NOTIFICATIONS ENDPOINTS =====
 
 // In-memory notifications store

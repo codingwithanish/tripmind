@@ -283,6 +283,109 @@ const chatService = {
     );
     return response.data.data!;
   },
+
+  // =========================================================================
+  // Timeline Chat Methods
+  // =========================================================================
+
+  // Get timeline messages (filtered by timeline_generation stage)
+  getTimelineMessages: async (
+    threadId: string,
+    options?: { limit?: number; before?: string }
+  ): Promise<{
+    messages: Array<{
+      id: string;
+      role: 'user' | 'assistant';
+      sender_id: string;
+      type: string;
+      content: string;
+      created_at: string;
+      status: string;
+      help_context?: Record<string, unknown>;
+    }>;
+    next_cursor: string | null;
+    total: number;
+  }> => {
+    const params = new URLSearchParams();
+    if (options?.limit) params.append('limit', options.limit.toString());
+    if (options?.before) params.append('before', options.before);
+
+    const queryString = params.toString();
+    const url = `/timeline/${threadId}/messages${queryString ? `?${queryString}` : ''}`;
+    const response = await api.get(url);
+    return response.data;
+  },
+
+  // Send timeline conversation message with streaming support
+  // Uses /api/v1/timeline/:threadId/conversations endpoint
+  sendTimelineConversation: async (
+    threadId: string,
+    message: string,
+    helpContext: Record<string, unknown> | undefined,
+    onMessage: (message: StreamedMessage) => void,
+    onError?: (error: Error) => void,
+    onComplete?: () => void
+  ): Promise<void> => {
+    const token = localStorage.getItem('token');
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/timeline/${threadId}/conversations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ message, helpContext }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('Response body is not readable');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+
+        if (done) {
+          if (buffer.trim()) {
+            try {
+              const parsed = JSON.parse(buffer.trim());
+              onMessage(parsed);
+            } catch {
+              // Ignore incomplete JSON
+            }
+          }
+          onComplete?.();
+          break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.trim()) {
+            try {
+              const parsed = JSON.parse(line.trim());
+              onMessage(parsed);
+            } catch {
+              // Skip malformed JSON
+            }
+          }
+        }
+      }
+    } catch (error) {
+      onError?.(error instanceof Error ? error : new Error('Unknown error'));
+    }
+  },
 };
 
 export default chatService;
