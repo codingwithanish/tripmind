@@ -386,6 +386,47 @@ const chatService = {
       onError?.(error instanceof Error ? error : new Error('Unknown error'));
     }
   },
+
+  // =========================================================================
+  // Element Search Methods
+  // =========================================================================
+
+  // Search for element details based on category
+  // POST /api/v1/timeline/search
+  searchElementDetails: async (
+    category: string,
+    description: string,
+    context?: {
+      dates?: { start?: string; end?: string };
+      location?: string;
+      travelers?: number;
+      budget?: { min?: number; max?: number; currency?: string };
+    }
+  ): Promise<{
+    success: boolean;
+    data?: {
+      category: string;
+      featured?: unknown;
+      alternatives?: unknown[];
+      items?: unknown[];
+    };
+    error?: string;
+  }> => {
+    try {
+      const response = await api.post('/timeline/search', {
+        category,
+        description,
+        context,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Search element details error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Search failed',
+      };
+    }
+  },
 };
 
 export default chatService;

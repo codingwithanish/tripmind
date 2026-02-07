@@ -39,6 +39,16 @@ export interface TimelineRendererProps {
     onRecommendationIgnore?: (recId: string, nodeId: string) => void;
     onAdditionalInput?: (nodeId: string, value: string) => void;
     onHelpRequest?: (nodeId: string) => void;
+    onElementClick?: (element: ElementClickData) => void;
+}
+
+// Element click data for search panel
+export interface ElementClickData {
+    elementId: string;
+    category: string;
+    title: string;
+    description: string;
+    nodeId: string;
 }
 
 export interface ActionCardProps {

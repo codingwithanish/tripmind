@@ -15,6 +15,7 @@ from .suggestion_agent import SuggestionAgent
 from .travel_planning_agent import TravelPlanningAgent
 from .timeline_generation_agent import TimelineGenerationAgent
 from .context_initialization_agent import ContextInitializationAgent
+from .search_agent import SearchAgent
 
 # Create and register agent instances
 _itinerary_agent = ItineraryAgent()
@@ -24,6 +25,7 @@ _suggestion_agent = SuggestionAgent()
 _travel_planning_agent = TravelPlanningAgent()
 _timeline_generation_agent = TimelineGenerationAgent()
 _context_initialization_agent = ContextInitializationAgent()
+_search_agent = SearchAgent()
 
 AgentRegistry.register(_itinerary_agent)
 AgentRegistry.register(_recommender_agent)
@@ -32,6 +34,7 @@ AgentRegistry.register(_suggestion_agent)
 AgentRegistry.register(_travel_planning_agent)
 AgentRegistry.register(_timeline_generation_agent)
 AgentRegistry.register(_context_initialization_agent)
+AgentRegistry.register(_search_agent)
 
 __all__ = [
     "ItineraryAgent",
@@ -41,5 +44,6 @@ __all__ = [
     "TravelPlanningAgent",
     "TimelineGenerationAgent",
     "ContextInitializationAgent",
+    "SearchAgent",
 ]
 

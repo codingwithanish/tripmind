@@ -182,6 +182,247 @@ router.post('/:travelId', (req: Request, res: Response) => {
 import messageDao from '../database/dao/messageDao';
 import suggestionService from '../services/suggestionService';
 
+// ===== ELEMENT SEARCH ENDPOINT =====
+
+interface SearchRequest {
+    category: string;
+    description: string;
+    context?: {
+        dates?: { start?: string; end?: string };
+        location?: string;
+        travelers?: number;
+        budget?: { min?: number; max?: number; currency?: string };
+    };
+}
+
+// Dummy data functions (will be replaced with AI service call)
+function getDummyFlightResults() {
+    return {
+        category: "flight-booking",
+        featured: {
+            id: crypto.randomUUID(),
+            airline: "Emirates",
+            airline_logo: "https://logos-world.net/wp-content/uploads/2020/03/Emirates-Logo.png",
+            flight_number: "EK505",
+            departure_airport: "JFK",
+            arrival_airport: "DXB",
+            departure_time: "2026-03-15T22:00:00",
+            arrival_time: "2026-03-16T19:30:00",
+            departure_date: "March 15, 2026",
+            duration: "13h 30m",
+            stops: 0,
+            stops_description: "Direct",
+            price: 1249.00,
+            currency: "USD",
+            booking_url: "https://www.emirates.com",
+            cabin_class: "Economy"
+        },
+        alternatives: [
+            {
+                id: crypto.randomUUID(),
+                airline: "Qatar Airways",
+                airline_logo: "https://logos-world.net/wp-content/uploads/2020/03/Qatar-Airways-Logo.png",
+                flight_number: "QR702",
+                departure_airport: "JFK",
+                arrival_airport: "DOH",
+                departure_time: "2026-03-15T20:15:00",
+                arrival_time: "2026-03-16T16:45:00",
+                departure_date: "March 15, 2026",
+                duration: "12h 30m",
+                stops: 0,
+                stops_description: "Direct",
+                price: 1189.00,
+                currency: "USD",
+                booking_url: "https://www.qatarairways.com",
+                cabin_class: "Economy"
+            },
+            {
+                id: crypto.randomUUID(),
+                airline: "Turkish Airlines",
+                airline_logo: "https://logos-world.net/wp-content/uploads/2020/11/Turkish-Airlines-Logo.png",
+                flight_number: "TK12",
+                departure_airport: "JFK",
+                arrival_airport: "IST",
+                departure_time: "2026-03-15T23:30:00",
+                arrival_time: "2026-03-16T17:00:00",
+                departure_date: "March 15, 2026",
+                duration: "10h 30m",
+                stops: 1,
+                stops_description: "1 stop via Istanbul",
+                price: 899.00,
+                currency: "USD",
+                booking_url: "https://www.turkishairlines.com",
+                cabin_class: "Economy"
+            },
+            {
+                id: crypto.randomUUID(),
+                airline: "Lufthansa",
+                airline_logo: "https://logos-world.net/wp-content/uploads/2020/10/Lufthansa-Logo.png",
+                flight_number: "LH401",
+                departure_airport: "JFK",
+                arrival_airport: "FRA",
+                departure_time: "2026-03-15T18:00:00",
+                arrival_time: "2026-03-16T07:30:00",
+                departure_date: "March 15, 2026",
+                duration: "7h 30m",
+                stops: 0,
+                stops_description: "Direct",
+                price: 1099.00,
+                currency: "USD",
+                booking_url: "https://www.lufthansa.com",
+                cabin_class: "Economy"
+            }
+        ]
+    };
+}
+
+function getDummyHotelResults() {
+    return {
+        category: "hotel-booking",
+        featured: {
+            id: crypto.randomUUID(),
+            name: "The Ritz-Carlton Tokyo",
+            image_url: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800",
+            location: "Tokyo Midtown, Roppongi, Tokyo",
+            rating: 5.0,
+            review_score: 9.4,
+            review_count: 2847,
+            price_per_night: 450.00,
+            currency: "USD",
+            amenities: ["Free WiFi", "Spa", "Fitness Center", "Restaurant", "Pool"],
+            booking_url: "https://www.ritzcarlton.com/tokyo",
+            room_type: "Deluxe Room"
+        },
+        alternatives: [
+            {
+                id: crypto.randomUUID(),
+                name: "Park Hyatt Tokyo",
+                image_url: "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800",
+                location: "Shinjuku, Tokyo",
+                rating: 5.0,
+                review_score: 9.2,
+                review_count: 1923,
+                price_per_night: 520.00,
+                currency: "USD",
+                amenities: ["Free WiFi", "Spa", "Pool", "Restaurant"],
+                booking_url: "https://www.hyatt.com/parkhyatt/tokyo",
+                room_type: "Park Room"
+            },
+            {
+                id: crypto.randomUUID(),
+                name: "Hotel Gracery Shinjuku",
+                image_url: "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=800",
+                location: "Kabukicho, Shinjuku, Tokyo",
+                rating: 4.0,
+                review_score: 8.5,
+                review_count: 5234,
+                price_per_night: 120.00,
+                currency: "USD",
+                amenities: ["Free WiFi", "Restaurant", "Godzilla Statue"],
+                booking_url: "https://gracery.com/shinjuku",
+                room_type: "Standard Room"
+            }
+        ]
+    };
+}
+
+function getDummyRestaurantResults() {
+    return {
+        category: "restaurants",
+        featured: {
+            id: crypto.randomUUID(),
+            name: "Sukiyabashi Jiro",
+            image_url: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=800",
+            cuisine: "Japanese Sushi",
+            location: "Ginza, Tokyo",
+            rating: 4.9,
+            price_level: "$$$$",
+            review_count: 1247,
+            booking_url: "https://jiro.jp/reservation",
+            opening_hours: "11:30 AM - 2:00 PM, 5:30 PM - 8:30 PM"
+        },
+        alternatives: [
+            {
+                id: crypto.randomUUID(),
+                name: "Ichiran Ramen",
+                image_url: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800",
+                cuisine: "Ramen",
+                location: "Shibuya, Tokyo",
+                rating: 4.5,
+                price_level: "$",
+                review_count: 8234,
+                booking_url: null,
+                opening_hours: "24 hours"
+            }
+        ]
+    };
+}
+
+function getDummyGeneralResults(category: string) {
+    return {
+        category: category,
+        items: [
+            {
+                id: crypto.randomUUID(),
+                title: "Important Travel Tips",
+                description: "Remember to bring your passport, check visa requirements, and download offline maps.",
+                icon: "mdi:information",
+                action_url: null,
+                action_label: null
+            },
+            {
+                id: crypto.randomUUID(),
+                title: "Local Currency",
+                description: "The local currency is Japanese Yen (JPY). Credit cards are widely accepted in major cities.",
+                icon: "mdi:currency-jpy",
+                action_url: null,
+                action_label: null
+            }
+        ]
+    };
+}
+
+// POST /api/v1/timeline/search
+// Search for element details based on category
+router.post('/search', async (req: Request, res: Response) => {
+    const { category, description, context } = req.body as SearchRequest;
+
+    if (!category) {
+        return res.status(400).json({
+            success: false,
+            error: 'Category is required'
+        });
+    }
+
+    try {
+        // For now, return dummy data based on category
+        // Later this will call the AI service search_agent
+        const categoryLower = category.toLowerCase().replace(/-/g, '_').replace(/ /g, '_');
+
+        let results;
+        if (categoryLower.includes('flight')) {
+            results = getDummyFlightResults();
+        } else if (categoryLower.includes('hotel') || categoryLower.includes('accommodation')) {
+            results = getDummyHotelResults();
+        } else if (categoryLower.includes('restaurant') || categoryLower.includes('dining') || categoryLower.includes('food')) {
+            results = getDummyRestaurantResults();
+        } else {
+            results = getDummyGeneralResults(category);
+        }
+
+        res.json({
+            success: true,
+            data: results
+        });
+    } catch (error: any) {
+        console.error('Search error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message || 'Search failed'
+        });
+    }
+});
+
 // Get timeline messages (filtered by timeline_generation stage)
 // GET /api/v1/timeline/:threadId/messages
 router.get('/:threadId/messages', async (req: Request, res: Response) => {
