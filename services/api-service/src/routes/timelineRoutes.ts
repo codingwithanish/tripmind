@@ -384,14 +384,15 @@ function getDummyGeneralResults(category: string) {
 
 // POST /api/v1/timeline/search
 // Search for element details based on category
-router.post('/search', async (req: Request, res: Response) => {
-    const { category, description, context } = req.body as SearchRequest;
+router.post('/search', async (req: Request, res: Response): Promise<void> => {
+    const { category } = req.body as SearchRequest;
 
     if (!category) {
-        return res.status(400).json({
+        res.status(400).json({
             success: false,
             error: 'Category is required'
         });
+        return;
     }
 
     try {

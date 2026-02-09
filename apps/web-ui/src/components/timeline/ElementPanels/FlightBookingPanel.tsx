@@ -110,7 +110,7 @@ const FlightCard: React.FC<{ flight: FlightResult; isFeatured?: boolean }> = ({ 
     }
 
     return (
-        <div className="alternative-card" onClick={handleBookNow}>
+        <div className="alternative-card">
             {flight.airline_logo && (
                 <img
                     src={flight.airline_logo}
@@ -132,11 +132,16 @@ const FlightCard: React.FC<{ flight: FlightResult; isFeatured?: boolean }> = ({ 
                     </span>
                 </div>
             </div>
-            <div className="alternative-card__price">
-                <span className="alternative-card__price-amount">
-                    ${flight.price.toLocaleString()}
-                </span>
-                <span className="alternative-card__price-label">per person</span>
+            <div className="alternative-card__right">
+                <div className="alternative-card__price">
+                    <span className="alternative-card__price-amount">
+                        ${flight.price.toLocaleString()}
+                    </span>
+                    <span className="alternative-card__price-label">per person</span>
+                </div>
+                <button className="book-now-btn book-now-btn--small" onClick={handleBookNow}>
+                    Book Now
+                </button>
             </div>
         </div>
     );

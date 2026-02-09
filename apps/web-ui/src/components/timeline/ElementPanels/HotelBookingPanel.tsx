@@ -122,7 +122,7 @@ const HotelCard: React.FC<{ hotel: HotelResult; isFeatured?: boolean }> = ({ hot
     }
 
     return (
-        <div className="alternative-card" onClick={handleBookNow}>
+        <div className="alternative-card">
             {hotel.image_url && (
                 <img
                     src={hotel.image_url}
@@ -144,11 +144,16 @@ const HotelCard: React.FC<{ hotel: HotelResult; isFeatured?: boolean }> = ({ hot
                     )}
                 </div>
             </div>
-            <div className="alternative-card__price">
-                <span className="alternative-card__price-amount">
-                    ${hotel.price_per_night.toLocaleString()}
-                </span>
-                <span className="alternative-card__price-label">per night</span>
+            <div className="alternative-card__right">
+                <div className="alternative-card__price">
+                    <span className="alternative-card__price-amount">
+                        ${hotel.price_per_night.toLocaleString()}
+                    </span>
+                    <span className="alternative-card__price-label">per night</span>
+                </div>
+                <button className="book-now-btn book-now-btn--small" onClick={handleBookNow}>
+                    Book Now
+                </button>
             </div>
         </div>
     );

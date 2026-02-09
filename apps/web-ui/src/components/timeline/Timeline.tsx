@@ -7,6 +7,7 @@ import type {
     TaskElement,
     RecommendationElement,
     TimelineRendererProps,
+    ElementClickData,
 } from './TimelineTypes';
 import { TimelineConfig, getSeverityFromNode, mapIcon } from './TimelineTypes';
 import './Timeline.css';
@@ -32,10 +33,45 @@ const Icon: React.FC<IconProps> = ({ icon, className }) => {
 interface TaskItemComponentProps {
     item: TaskElement | RecommendationElement;
     type: 'task' | 'recommendation';
+    nodeId: string;
+    onClick?: (element: ElementClickData) => void;
 }
 
-const TaskItem: React.FC<TaskItemComponentProps> = ({ item, type }) => {
+const TaskItem: React.FC<TaskItemComponentProps> = ({ item, type, nodeId, onClick }) => {
     const icon = 'title_image' in item ? mapIcon(item.title_image) : 'mdi:checkbox-marked-circle';
+
+    // Determine category based on item type and content
+    const getCategory = (): string => {
+        const title = item.title?.toLowerCase() || '';
+        const desc = item.description?.toLowerCase() || '';
+        const text = title + ' ' + desc;
+
+        if (text.includes('flight') || text.includes('airplane') || text.includes('airport')) {
+            return 'flight-booking';
+        }
+        if (text.includes('hotel') || text.includes('accommodation') || text.includes('stay') || text.includes('room')) {
+            return 'hotel-booking';
+        }
+        if (text.includes('restaurant') || text.includes('dining') || text.includes('food') || text.includes('ramen') || text.includes('cuisine')) {
+            return 'restaurant';
+        }
+        if (text.includes('temple') || text.includes('museum') || text.includes('garden') || text.includes('visit') || text.includes('explore')) {
+            return 'activity';
+        }
+        return 'general';
+    };
+
+    const handleClick = () => {
+        if (onClick) {
+            onClick({
+                elementId: item.id,
+                category: getCategory(),
+                title: item.title,
+                description: item.description || '',
+                nodeId: nodeId,
+            });
+        }
+    };
 
     // Get price info
     let priceText = '';
@@ -68,7 +104,7 @@ const TaskItem: React.FC<TaskItemComponentProps> = ({ item, type }) => {
     }
 
     return (
-        <div className="task-item" data-item-id={item.id}>
+        <div className="task-item" data-item-id={item.id} onClick={handleClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
             <div className="task-item-top">
                 <div className="task-icon">
                     <Icon icon={icon} />
@@ -98,9 +134,10 @@ const TaskItem: React.FC<TaskItemComponentProps> = ({ item, type }) => {
 interface ActionCardComponentProps {
     node: TimelineNode;
     onHelpRequest?: (nodeId: string) => void;
+    onElementClick?: (element: ElementClickData) => void;
 }
 
-const ActionCard: React.FC<ActionCardComponentProps> = ({ node, onHelpRequest }) => {
+const ActionCard: React.FC<ActionCardComponentProps> = ({ node, onHelpRequest, onElementClick }) => {
     const [isFlipped, setIsFlipped] = useState(false);
     const flipTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -179,7 +216,7 @@ const ActionCard: React.FC<ActionCardComponentProps> = ({ node, onHelpRequest })
                         <div className="task-list">
                             {tasks.length > 0 ? (
                                 tasks.map((task: TaskElement) => (
-                                    <TaskItem key={task.id} item={task} type="task" />
+                                    <TaskItem key={task.id} item={task} type="task" nodeId={node.id} onClick={onElementClick} />
                                 ))
                             ) : (
                                 <div className="empty-state">No actions available</div>
@@ -214,7 +251,7 @@ const ActionCard: React.FC<ActionCardComponentProps> = ({ node, onHelpRequest })
                         <div className="task-list">
                             {hasRecommendations ? (
                                 recommendations.map((rec: RecommendationElement) => (
-                                    <TaskItem key={rec.id} item={rec} type="recommendation" />
+                                    <TaskItem key={rec.id} item={rec} type="recommendation" nodeId={node.id} onClick={onElementClick} />
                                 ))
                             ) : (
                                 <div className="empty-state">No recommendations available for this action.</div>
@@ -296,12 +333,14 @@ interface TimelineNodeComponentProps {
     node: TimelineNode;
     isLast: boolean;
     onHelpRequest?: (nodeId: string) => void;
+    onElementClick?: (element: ElementClickData) => void;
 }
 
 const TimelineNodeComponent: React.FC<TimelineNodeComponentProps> = ({
     node,
     isLast,
     onHelpRequest,
+    onElementClick,
 }) => {
     const config = TimelineConfig.spacing;
 
@@ -388,7 +427,7 @@ const TimelineNodeComponent: React.FC<TimelineNodeComponentProps> = ({
             <div className="card-wrapper">
                 {isStart && <BoundaryCard type="start" node={node} />}
                 {isEnd && <BoundaryCard type="end" node={node} />}
-                {isAction && <ActionCard node={node} onHelpRequest={onHelpRequest} />}
+                {isAction && <ActionCard node={node} onHelpRequest={onHelpRequest} onElementClick={onElementClick} />}
                 {isRepresentation && <RepresentationCard node={node} />}
             </div>
         </div>
@@ -403,6 +442,7 @@ export function TimelineRenderer({
     data,
     className = '',
     onHelpRequest,
+    onElementClick,
 }: TimelineRendererProps) {
     if (!data) {
         return (
@@ -426,6 +466,7 @@ export function TimelineRenderer({
                     node={node}
                     isLast={index === sortedNodes.length - 1}
                     onHelpRequest={onHelpRequest}
+                    onElementClick={onElementClick}
                 />
             ))}
         </div>

@@ -306,33 +306,50 @@
     color: var(--text-secondary, rgba(255, 255, 255, 0.7));
 }
 
-/* Mobile Overlay */
+/* Alternative Card Right Section (Price + Button) */
+.alternative-card__right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* Small Book Now Button */
+.book-now-btn--small {
+    padding: 8px 16px;
+    font-size: 0.75rem;
+    border-radius: 8px;
+}
+
+/* Mobile Overlay - Fullscreen (except header) */
 @media (max-width: 768px) {
     .element-panel-overlay {
         position: fixed;
-        top: 0;
+        top: 56px;
+        /* Below header */
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.7);
-        z-index: 1000;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 100;
         display: flex;
-        align-items: flex-end;
+        flex-direction: column;
     }
 
     .element-panel-overlay .element-panel {
-        height: 85vh;
-        border-radius: 24px 24px 0 0;
-        animation: slideUp 0.3s ease-out;
+        height: 100%;
+        border-radius: 0;
+        animation: fadeIn 0.3s ease-out;
     }
 
-    @keyframes slideUp {
+    @keyframes fadeIn {
         from {
-            transform: translateY(100%);
+            opacity: 0;
         }
 
         to {
-            transform: translateY(0);
+            opacity: 1;
         }
     }
 }

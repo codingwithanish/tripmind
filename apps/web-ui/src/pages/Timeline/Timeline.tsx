@@ -4,6 +4,7 @@ import { TimelineRenderer } from '@components/timeline';
 import TimelineChat from '@components/timeline/TimelineChat';
 import TimelineNotificationsPanel from '@components/timeline/TimelineNotificationsPanel';
 import TimelineSettingsPanel from '@components/timeline/TimelineSettingsPanel';
+import { ElementDetailsPanel, type ElementClickData } from '@components/timeline/ElementPanels';
 import timelineWebSocket from '@services/timelineWebSocket';
 import { TimelineData, TimelineNode, CompleteTimelineEvent } from '../../types/websocket.types';
 import './Timeline.css';
@@ -28,6 +29,12 @@ const Timeline: React.FC = () => {
     const [activeTab, setActiveTab] = useState<TabType>('chat');
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
     const [helpContextNode, setHelpContextNode] = useState<TimelineNode | null>(null);
+
+    // Element panel state
+    const [selectedElement, setSelectedElement] = useState<ElementClickData | null>(null);
+    const [elementSearchResults, setElementSearchResults] = useState<any | null>(null);
+    const [elementPanelLoading, setElementPanelLoading] = useState(false);
+    const [elementPanelError, setElementPanelError] = useState<string | null>(null);
 
     // Handle window resize
     useEffect(() => {
@@ -191,6 +198,165 @@ const Timeline: React.FC = () => {
         setHelpContextNode(null);
     }, []);
 
+    // Handle element click from timeline
+    const handleElementClick = useCallback((element: ElementClickData) => {
+        console.log('Element clicked:', element);
+        setSelectedElement(element);
+        setElementPanelLoading(true);
+        setElementPanelError(null);
+        setElementSearchResults(null);
+
+        // Simulate search results based on category
+        // In real implementation, this would call an API
+        setTimeout(() => {
+            let results: any;
+
+            if (element.category === 'flight-booking') {
+                results = {
+                    category: 'flight-booking',
+                    featured: {
+                        id: 'flight-1',
+                        airline: 'Japan Airlines',
+                        airline_logo: 'https://logos-world.net/wp-content/uploads/2021/03/Japan-Airlines-Logo.png',
+                        flight_number: 'JL 001',
+                        departure_airport: 'SFO',
+                        arrival_airport: 'NRT',
+                        departure_time: '10:30 AM',
+                        arrival_time: '3:30 PM +1',
+                        departure_date: 'Mar 1, 2026',
+                        duration: '11h 30m',
+                        stops: 0,
+                        stops_description: 'Direct',
+                        price: 950,
+                        currency: 'USD',
+                        booking_url: 'https://example.com/book/jl001',
+                        cabin_class: 'Economy'
+                    },
+                    alternatives: [
+                        {
+                            id: 'flight-2',
+                            airline: 'ANA',
+                            airline_logo: 'https://logos-world.net/wp-content/uploads/2021/03/ANA-All-Nippon-Airways-Logo.png',
+                            flight_number: 'NH 008',
+                            departure_airport: 'SFO',
+                            arrival_airport: 'NRT',
+                            departure_time: '1:00 PM',
+                            arrival_time: '6:00 PM +1',
+                            departure_date: 'Mar 1, 2026',
+                            duration: '11h 0m',
+                            stops: 0,
+                            price: 875,
+                            currency: 'USD',
+                            cabin_class: 'Economy'
+                        },
+                        {
+                            id: 'flight-3',
+                            airline: 'United Airlines',
+                            flight_number: 'UA 837',
+                            departure_airport: 'SFO',
+                            arrival_airport: 'NRT',
+                            departure_time: '11:00 AM',
+                            arrival_time: '4:30 PM +1',
+                            departure_date: 'Mar 1, 2026',
+                            duration: '12h 30m',
+                            stops: 1,
+                            stops_description: '1 stop in LAX',
+                            price: 720,
+                            currency: 'USD',
+                            cabin_class: 'Economy'
+                        }
+                    ]
+                };
+            } else if (element.category === 'hotel-booking') {
+                results = {
+                    category: 'hotel-booking',
+                    featured: {
+                        id: 'hotel-1',
+                        name: 'Park Hyatt Tokyo',
+                        image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400',
+                        rating: 4.9,
+                        reviews: 2847,
+                        location: 'Shinjuku, Tokyo',
+                        amenities: ['Spa', 'Pool', 'Gym', 'Restaurant', 'Bar'],
+                        price_per_night: 450,
+                        currency: 'USD',
+                        booking_url: 'https://example.com/book/park-hyatt',
+                        room_type: 'Deluxe King Room'
+                    },
+                    alternatives: [
+                        {
+                            id: 'hotel-2',
+                            name: 'Shinjuku Granbell Hotel',
+                            image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=400',
+                            rating: 4.5,
+                            reviews: 1256,
+                            location: 'Shinjuku, Tokyo',
+                            amenities: ['WiFi', 'Restaurant', 'Concierge'],
+                            price_per_night: 180,
+                            currency: 'USD',
+                            room_type: 'Superior Double'
+                        }
+                    ]
+                };
+            } else if (element.category === 'restaurant') {
+                results = {
+                    category: 'restaurant',
+                    featured: {
+                        id: 'restaurant-1',
+                        name: 'Ichiran Ramen Shibuya',
+                        image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400',
+                        rating: 4.7,
+                        reviews: 3456,
+                        cuisine: 'Japanese Ramen',
+                        location: 'Shibuya, Tokyo',
+                        price_range: '$$',
+                        opening_hours: '11:00 AM - 11:00 PM',
+                        booking_url: 'https://example.com/reserve/ichiran'
+                    },
+                    alternatives: [
+                        {
+                            id: 'restaurant-2',
+                            name: 'Fuunji Tsukemen',
+                            image: 'https://images.unsplash.com/photo-1591814468924-caf88d1232e1?w=400',
+                            rating: 4.6,
+                            reviews: 1823,
+                            cuisine: 'Tsukemen',
+                            location: 'Shinjuku, Tokyo',
+                            price_range: '$$'
+                        }
+                    ]
+                };
+            } else {
+                // General/activity panel
+                results = {
+                    category: element.category,
+                    title: element.title,
+                    description: element.description,
+                    options: [
+                        {
+                            id: 'opt-1',
+                            name: element.title,
+                            description: element.description || 'Explore this amazing activity',
+                            price: 'Free - $50',
+                            rating: 4.5,
+                            reviews: 128,
+                        }
+                    ]
+                };
+            }
+
+            setElementSearchResults(results);
+            setElementPanelLoading(false);
+        }, 1000);
+    }, []);
+
+    const handleCloseElementPanel = useCallback(() => {
+        setSelectedElement(null);
+        setElementSearchResults(null);
+        setElementPanelLoading(false);
+        setElementPanelError(null);
+    }, []);
+
     // Render tab content
     const renderTabContent = () => {
         switch (activeTab) {
@@ -206,6 +372,7 @@ const Timeline: React.FC = () => {
                                     onTaskComplete={handleTaskComplete}
                                     onAdditionalInput={handleAdditionalInput}
                                     onHelpRequest={handleHelpRequest}
+                                    onElementClick={handleElementClick}
                                 />
                             )}
                             <div className="timeline-generating__indicator">
@@ -221,6 +388,7 @@ const Timeline: React.FC = () => {
                         onTaskComplete={handleTaskComplete}
                         onAdditionalInput={handleAdditionalInput}
                         onHelpRequest={handleHelpRequest}
+                        onElementClick={handleElementClick}
                     />
                 ) : (
                     <div className="timeline-loading">
@@ -278,6 +446,18 @@ const Timeline: React.FC = () => {
                         {renderTabContent()}
                     </div>
                 </div>
+
+                {/* Element Details Panel for Mobile */}
+                {selectedElement && (
+                    <ElementDetailsPanel
+                        element={selectedElement}
+                        searchResults={elementSearchResults}
+                        isLoading={elementPanelLoading}
+                        error={elementPanelError}
+                        onClose={handleCloseElementPanel}
+                        isMobile={true}
+                    />
+                )}
 
                 {/* Bottom Navigation */}
                 <nav className="timeline-page__bottom-nav">
@@ -364,6 +544,7 @@ const Timeline: React.FC = () => {
                             onTaskComplete={handleTaskComplete}
                             onAdditionalInput={handleAdditionalInput}
                             onHelpRequest={handleHelpRequest}
+                            onElementClick={handleElementClick}
                         />
                     ) : (
                         <div className="timeline-loading">
@@ -373,69 +554,84 @@ const Timeline: React.FC = () => {
                     )}
                 </div>
 
-                {/* Right - Tabbed Panel */}
-                <div className="timeline-page__right">
-                    {/* Vertical Tabs */}
-                    <div className="timeline-page__vertical-tabs">
-                        <button
-                            className={`timeline-page__vtab ${activeTab === 'chat' ? 'timeline-page__vtab--active' : ''}`}
-                            onClick={() => setActiveTab('chat')}
-                            title="Chat"
-                        >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-                            </svg>
-                            <span>Chat</span>
-                        </button>
-                        <button
-                            className={`timeline-page__vtab ${activeTab === 'notifications' ? 'timeline-page__vtab--active' : ''}`}
-                            onClick={() => setActiveTab('notifications')}
-                            title="Notifications"
-                        >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                            </svg>
-                            <span>Notifications</span>
-                        </button>
-                        <button
-                            className={`timeline-page__vtab ${activeTab === 'settings' ? 'timeline-page__vtab--active' : ''}`}
-                            onClick={() => setActiveTab('settings')}
-                            title="Settings"
-                        >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <circle cx="12" cy="12" r="3"></circle>
-                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                            </svg>
-                            <span>Settings</span>
-                        </button>
+                {/* Right Panel - Either Element Details or Tabbed Panel */}
+                {selectedElement ? (
+                    /* Element Details Panel replaces the right panel */
+                    <div className="timeline-page__right timeline-page__right--element">
+                        <ElementDetailsPanel
+                            element={selectedElement}
+                            searchResults={elementSearchResults}
+                            isLoading={elementPanelLoading}
+                            error={elementPanelError}
+                            onClose={handleCloseElementPanel}
+                            isMobile={false}
+                        />
                     </div>
+                ) : (
+                    /* Regular Tabbed Panel */
+                    <div className="timeline-page__right">
+                        {/* Vertical Tabs */}
+                        <div className="timeline-page__vertical-tabs">
+                            <button
+                                className={`timeline-page__vtab ${activeTab === 'chat' ? 'timeline-page__vtab--active' : ''}`}
+                                onClick={() => setActiveTab('chat')}
+                                title="Chat"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                </svg>
+                                <span>Chat</span>
+                            </button>
+                            <button
+                                className={`timeline-page__vtab ${activeTab === 'notifications' ? 'timeline-page__vtab--active' : ''}`}
+                                onClick={() => setActiveTab('notifications')}
+                                title="Notifications"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                                </svg>
+                                <span>Notifications</span>
+                            </button>
+                            <button
+                                className={`timeline-page__vtab ${activeTab === 'settings' ? 'timeline-page__vtab--active' : ''}`}
+                                onClick={() => setActiveTab('settings')}
+                                title="Settings"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="3" />
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                                </svg>
+                                <span>Settings</span>
+                            </button>
+                        </div>
 
-                    {/* Tab Content */}
-                    <div className="timeline-page__tab-content">
-                        {activeTab === 'chat' && (
-                            <TimelineChat
-                                threadId={effectiveThreadId}
-                                contextCard={helpContextNode}
-                                onContextCardHandled={handleContextCardHandled}
-                                onTimelineUpdate={handleTimelineUpdate}
-                            />
-                        )}
-                        {activeTab === 'notifications' && (
-                            <TimelineNotificationsPanel
-                                userId={effectiveUserId}
-                                threadId={effectiveThreadId}
-                            />
-                        )}
-                        {activeTab === 'settings' && (
-                            <TimelineSettingsPanel
-                                userId={effectiveUserId}
-                                threadId={effectiveThreadId}
-                                onTimelineUpdate={handleTimelineUpdate}
-                            />
-                        )}
+                        {/* Tab Content */}
+                        <div className="timeline-page__tab-content">
+                            {activeTab === 'chat' && (
+                                <TimelineChat
+                                    threadId={effectiveThreadId}
+                                    contextCard={helpContextNode}
+                                    onContextCardHandled={handleContextCardHandled}
+                                    onTimelineUpdate={handleTimelineUpdate}
+                                />
+                            )}
+                            {activeTab === 'notifications' && (
+                                <TimelineNotificationsPanel
+                                    userId={effectiveUserId}
+                                    threadId={effectiveThreadId}
+                                />
+                            )}
+                            {activeTab === 'settings' && (
+                                <TimelineSettingsPanel
+                                    userId={effectiveUserId}
+                                    threadId={effectiveThreadId}
+                                    onTimelineUpdate={handleTimelineUpdate}
+                                />
+                            )}
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );
