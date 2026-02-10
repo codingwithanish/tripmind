@@ -4,9 +4,11 @@ kind: Kustomization
 namespace: tripmind
 
 resources:
+  - base/configmap.yaml
+  - base/secrets.yaml
+  - base/postgres.yaml
   - base/api-service.yaml
   - base/ai-service.yaml
-  - base/integration-service.yaml
   - base/web-ui.yaml
   - base/ingress.yaml
 

@@ -1,33 +1,47 @@
-version: '3.8'
+# Development overrides — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
 
-# Development overrides
 services:
   web-ui:
     build:
       context: ../../apps/web-ui
-      target: development
+      target: build
     ports:
       - "5173:5173"
     volumes:
       - ../../apps/web-ui:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://localhost:3000
-    command: npm run dev -- --host
+      - VITE_API_BASE_URL=http://localhost:5000/api/v1
+      - VITE_SOCKET_URL=http://localhost:5000
+    command: npx vite --host
 
   api-service:
     build:
       context: ../../services/api-service
-      target: development
+      target: build
     ports:
-      - "3000:3000"
+      - "5000:5000"
     volumes:
       - ../../services/api-service:/app
       - /app/node_modules
     environment:
       - NODE_ENV=development
-    command: npm run dev
+      - PORT=5000
+      - DATABASE_URL=postgresql://tripmind:tripmind_secret@postgres:5432/tripmind?schema=public
+    command: npx nodemon
 
-  mongodb:
+  ai-service:
+    build:
+      context: ../../services/ai-service
     ports:
-      - "27017:27017"
+      - "8001:8001"
+    volumes:
+      - ../../services/ai-service:/app
+    environment:
+      - AI_EXECUTION_MODE=dummy
+    command: uvicorn src.api.main:app --host 0.0.0.0 --port 8001 --reload
+
+  postgres:
+    ports:
+      - "5432:5432"

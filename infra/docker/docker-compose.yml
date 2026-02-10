@@ -1,67 +1,89 @@
-version: '3.8'
-
 services:
+  # ─────────────────────────────────────────────
+  # Frontend — Vite + React served by nginx
+  # ─────────────────────────────────────────────
   web-ui:
     build:
       context: ../../apps/web-ui
       dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api/v1
+        VITE_SOCKET_URL: ""
     ports:
       - "80:80"
     depends_on:
-      - api-service
-    environment:
-      - VITE_API_URL=http://api-service:3000
+      api-service:
+        condition: service_healthy
     networks:
       - tripmind-network
 
+  # ─────────────────────────────────────────────
+  # API Service — Express + TypeScript + Prisma
+  # ─────────────────────────────────────────────
   api-service:
     build:
       context: ../../services/api-service
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "5000:5000"
     environment:
       - NODE_ENV=production
-      - MONGODB_URI=${MONGODB_URI}
-      - JWT_SECRET=${JWT_SECRET}
+      - PORT=5000
+      - DATABASE_URL=postgresql://tripmind:tripmind_secret@postgres:5432/tripmind?schema=public
+      - JWT_SECRET=${JWT_SECRET:-change-me-in-production}
+      - JWT_EXPIRE=7d
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_CALLBACK_URL=http://localhost/api/v1/auth/google/callback
+      - FRONTEND_URL=http://localhost
+      - AI_SERVICE_URL=http://ai-service:8001
     depends_on:
-      - mongodb
+      postgres:
+        condition: service_healthy
     networks:
       - tripmind-network
 
-  mongodb:
-    image: mongo:7
+  # ─────────────────────────────────────────────
+  # AI Service — FastAPI + Google ADK
+  # ─────────────────────────────────────────────
+  ai-service:
+    build:
+      context: ../../services/ai-service
+      dockerfile: Dockerfile
     ports:
-      - "27017:27017"
-    volumes:
-      - mongodb-data:/data/db
+      - "8001:8001"
+    environment:
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - DEFAULT_MODEL=gemini-2.0-flash
+      - AI_EXECUTION_MODE=${AI_EXECUTION_MODE:-actual}
+      - HOST=0.0.0.0
+      - PORT=8001
     networks:
       - tripmind-network
 
-  # ai-service:
-  #   build:
-  #     context: ../../services/ai-service
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "8000:8000"
-  #   environment:
-  #     - OPENAI_API_KEY=${OPENAI_API_KEY}
-  #   networks:
-  #     - tripmind-network
-
-  # integration-service:
-  #   build:
-  #     context: ../../services/integration-service
-  #     dockerfile: Dockerfile
-  #   ports:
-  #     - "8001:8001"
-  #   networks:
-  #     - tripmind-network
+  # ─────────────────────────────────────────────
+  # PostgreSQL Database
+  # ─────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=tripmind
+      - POSTGRES_PASSWORD=tripmind_secret
+      - POSTGRES_DB=tripmind
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tripmind -d tripmind"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tripmind-network
 
 volumes:
-  mongodb-data:
+  postgres-data:
 
 networks:
   tripmind-network:
