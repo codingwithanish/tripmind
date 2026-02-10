@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const demoUser: User = {
           id: '1',
           email: VALID_CREDENTIALS.email,
-          name: 'TripMind User',
+          name: 'TravelRekha User',
           authProvider: 'local',
           role: 'user',
           createdAt: new Date().toISOString(),

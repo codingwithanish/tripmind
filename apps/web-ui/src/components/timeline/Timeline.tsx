@@ -292,6 +292,9 @@ const RepresentationCard: React.FC<RepresentationCardComponentProps> = ({ node }
             </div>
             <div className="representation-content">
                 <div className="representation-title">{rep.title}</div>
+                {rep.description && (
+                    <div className="representation-description">{rep.description}</div>
+                )}
             </div>
         </div>
     );

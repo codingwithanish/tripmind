@@ -32,32 +32,19 @@ interface GeneralPanelProps {
     title?: string;
 }
 
-// Hardcoded sample markdown content (simulating AI service response)
-const SAMPLE_MARKDOWN_CONTENT = `
-## 🌸 Cherry Blossom Season in Tokyo
+// Default fallback markdown content (when no content is provided)
+const DEFAULT_MARKDOWN_CONTENT = `
+## 📋 Details
 
-Experience the magical **hanami** (flower viewing) season when Tokyo transforms into a wonderland of pink and white blossoms.
+Click on any item in the timeline to see detailed information here.
 
-### Best Viewing Spots
+### What You'll Find
+- 📍 **Location details** and directions
+- 💰 **Pricing information** in your currency
+- ⏰ **Timing tips** and recommendations
+- ⚠️ **Important warnings** and reminders
 
-1. **Ueno Park** - Over 1,000 cherry trees
-2. **Shinjuku Gyoen** - Mix of early and late-blooming varieties
-3. **Meguro River** - Beautiful lit-up evening views
-
-### Tips for Your Visit
-
-- 🕐 **Best Time**: Late March to early April
-- 📸 **Photography**: Early morning offers the best lighting
-- 🍱 **Food**: Bring a bento box for a traditional picnic
-
-### Weather Advisory
-
-> **Note**: March in Tokyo can be unpredictable. Temperatures range from 10°C to 18°C. Bring layers and a light jacket.
-
-### Useful Links
-
-- [Japan Meteorological Agency](https://www.jma.go.jp) - Blossom forecasts
-- [Tokyo Metro](https://www.tokyometro.jp) - Transportation info
+> 💡 **Tip**: Each activity, restaurant, and task has its own detailed guide!
 `;
 
 // Icon wrapper component
@@ -120,7 +107,7 @@ const GeneralPanel: React.FC<GeneralPanelProps> = ({
                                 padding: '20px',
                                 marginBottom: '16px'
                             }}>
-                                <MarkdownRenderer content={data.markdown_content || SAMPLE_MARKDOWN_CONTENT} />
+                                <MarkdownRenderer content={data.markdown_content || DEFAULT_MARKDOWN_CONTENT} />
                             </div>
                         )}
 

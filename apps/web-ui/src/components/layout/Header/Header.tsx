@@ -82,7 +82,7 @@ const Header: React.FC = () => {
         <div className="header-container">
           {/* Logo */}
           <Link to={ROUTES.HOME} className="header-logo">
-            <span className="logo-text">TripMind</span>
+            <span className="logo-text">TravelRekha</span>
           </Link>
 
           {/* Desktop Navigation */}
