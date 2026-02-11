@@ -3,7 +3,7 @@ import { STORAGE_KEYS } from '@utils/constants';
 import { appConfig } from '@/config/app.config';
 
 import authService from '@services/authService';
-import { User } from '@types/user.types';
+import { User } from '@/types/user.types';
 
 // Hardcoded credentials for demo mode (fallback)
 const VALID_CREDENTIALS = {

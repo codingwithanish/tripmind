@@ -1,6 +1,6 @@
 import api from './api';
-import { Travel, CreateTravelData, UpdateTravelData } from '@types/travel.types';
-import { ApiResponse } from '@types/api.types';
+import { Travel, CreateTravelData, UpdateTravelData } from '@/types/travel.types';
+import { ApiResponse } from '@/types/api.types';
 
 const travelService = {
   // Get all travels for current user

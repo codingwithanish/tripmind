@@ -1,6 +1,6 @@
-import { User, AuthProvider, UserRole } from '@types/user.types';
+import { User } from '@/types/user.types';
 
-export interface IUser extends User {}
+export interface IUser extends User { }
 
 export interface IAuthContext {
   user: User | null;

@@ -11,6 +11,7 @@ Comprehensive guide for containerizing and deploying the TripMind application us
 3. [Project Structure](#project-structure)
 4. [Docker Setup](#docker-setup)
    - [Building Images](#building-images)
+   - [Pushing Images to a Container Registry](#pushing-images-to-a-container-registry)
    - [Docker Compose (Production)](#docker-compose-production)
    - [Docker Compose (Development)](#docker-compose-development)
 5. [Kubernetes Deployment](#kubernetes-deployment)
@@ -59,7 +60,7 @@ Comprehensive guide for containerizing and deploying the TripMind application us
 ## Prerequisites
 
 | Tool | Version | Purpose |
-|------|---------|---------|
+|------|---------|---------:|
 | Docker | ≥ 24.0 | Container runtime |
 | Docker Compose | ≥ 2.20 | Multi-container orchestration |
 | kubectl | ≥ 1.28 | Kubernetes CLI |
@@ -146,6 +147,232 @@ docker build \
 
 > [!IMPORTANT]
 > Vite injects environment variables at **build time**, not runtime. You must rebuild the image when changing `VITE_*` variables.
+
+### Pushing Images to a Container Registry
+
+After building images locally, you need to push them to a centralized container registry so that Kubernetes nodes (or other deployment targets) can pull them.
+
+#### Image Tagging Convention
+
+Use semantic versioning alongside `latest`:
+
+```bash
+# Tag with version and latest
+docker tag tripmind/web-ui:latest       <REGISTRY>/tripmind/web-ui:1.0.0
+docker tag tripmind/web-ui:latest       <REGISTRY>/tripmind/web-ui:latest
+docker tag tripmind/api-service:latest  <REGISTRY>/tripmind/api-service:1.0.0
+docker tag tripmind/api-service:latest  <REGISTRY>/tripmind/api-service:latest
+docker tag tripmind/ai-service:latest   <REGISTRY>/tripmind/ai-service:1.0.0
+docker tag tripmind/ai-service:latest   <REGISTRY>/tripmind/ai-service:latest
+```
+
+> [!TIP]
+> For CI/CD, also tag with the Git commit SHA for traceability:
+> `docker tag tripmind/web-ui:latest <REGISTRY>/tripmind/web-ui:$(git rev-parse --short HEAD)`
+
+---
+
+#### Option A: Docker Hub
+
+The simplest option for public/private images.
+
+```bash
+# 1. Login to Docker Hub
+docker login
+
+# 2. Tag images (replace "yourusername" with your Docker Hub username)
+docker tag tripmind/web-ui:latest       yourusername/tripmind-web-ui:latest
+docker tag tripmind/web-ui:latest       yourusername/tripmind-web-ui:1.0.0
+docker tag tripmind/api-service:latest  yourusername/tripmind-api-service:latest
+docker tag tripmind/api-service:latest  yourusername/tripmind-api-service:1.0.0
+docker tag tripmind/ai-service:latest   yourusername/tripmind-ai-service:latest
+docker tag tripmind/ai-service:latest   yourusername/tripmind-ai-service:1.0.0
+
+# 3. Push all images
+docker push yourusername/tripmind-web-ui:latest
+docker push yourusername/tripmind-web-ui:1.0.0
+docker push yourusername/tripmind-api-service:latest
+docker push yourusername/tripmind-api-service:1.0.0
+docker push yourusername/tripmind-ai-service:latest
+docker push yourusername/tripmind-ai-service:1.0.0
+
+# 4. Verify on Docker Hub
+#    Visit https://hub.docker.com/r/yourusername/tripmind-web-ui
+```
+
+For private repos, create a Kubernetes pull secret:
+
+```bash
+kubectl create secret docker-registry dockerhub-creds \
+  --namespace=tripmind \
+  --docker-server=https://index.docker.io/v1/ \
+  --docker-username=yourusername \
+  --docker-password=YOUR_ACCESS_TOKEN \
+  --docker-email=your@email.com
+```
+
+Then add `imagePullSecrets` to your deployments:
+
+```yaml
+spec:
+  template:
+    spec:
+      imagePullSecrets:
+        - name: dockerhub-creds
+```
+
+---
+
+#### Option B: AWS Elastic Container Registry (ECR)
+
+Best for deployments on AWS EKS.
+
+```bash
+# 1. Create repositories (one-time setup)
+aws ecr create-repository --repository-name tripmind/web-ui
+aws ecr create-repository --repository-name tripmind/api-service
+aws ecr create-repository --repository-name tripmind/ai-service
+
+# 2. Login to ECR
+aws ecr get-login-password --region us-east-1 | \
+  docker login --username AWS --password-stdin \
+  123456789012.dkr.ecr.us-east-1.amazonaws.com
+
+# 3. Tag images
+export ECR_REGISTRY=123456789012.dkr.ecr.us-east-1.amazonaws.com
+docker tag tripmind/web-ui:latest       $ECR_REGISTRY/tripmind/web-ui:latest
+docker tag tripmind/web-ui:latest       $ECR_REGISTRY/tripmind/web-ui:1.0.0
+docker tag tripmind/api-service:latest  $ECR_REGISTRY/tripmind/api-service:latest
+docker tag tripmind/api-service:latest  $ECR_REGISTRY/tripmind/api-service:1.0.0
+docker tag tripmind/ai-service:latest   $ECR_REGISTRY/tripmind/ai-service:latest
+docker tag tripmind/ai-service:latest   $ECR_REGISTRY/tripmind/ai-service:1.0.0
+
+# 4. Push all images
+docker push $ECR_REGISTRY/tripmind/web-ui:latest
+docker push $ECR_REGISTRY/tripmind/web-ui:1.0.0
+docker push $ECR_REGISTRY/tripmind/api-service:latest
+docker push $ECR_REGISTRY/tripmind/api-service:1.0.0
+docker push $ECR_REGISTRY/tripmind/ai-service:latest
+docker push $ECR_REGISTRY/tripmind/ai-service:1.0.0
+
+# 5. Verify
+aws ecr describe-images --repository-name tripmind/web-ui
+```
+
+> [!NOTE]
+> ECR login tokens expire after **12 hours**. For EKS clusters, IAM roles handle authentication automatically.
+
+---
+
+#### Option C: Google Cloud Artifact Registry (GCP)
+
+Best for deployments on GKE.
+
+```bash
+# 1. Create repository (one-time setup)
+gcloud artifacts repositories create tripmind \
+  --repository-format=docker \
+  --location=us-central1 \
+  --description="TripMind Docker images"
+
+# 2. Configure Docker authentication
+gcloud auth configure-docker us-central1-docker.pkg.dev
+
+# 3. Tag images
+export GAR_REGISTRY=us-central1-docker.pkg.dev/YOUR_PROJECT_ID/tripmind
+docker tag tripmind/web-ui:latest       $GAR_REGISTRY/web-ui:latest
+docker tag tripmind/web-ui:latest       $GAR_REGISTRY/web-ui:1.0.0
+docker tag tripmind/api-service:latest  $GAR_REGISTRY/api-service:latest
+docker tag tripmind/api-service:latest  $GAR_REGISTRY/api-service:1.0.0
+docker tag tripmind/ai-service:latest   $GAR_REGISTRY/ai-service:latest
+docker tag tripmind/ai-service:latest   $GAR_REGISTRY/ai-service:1.0.0
+
+# 4. Push all images
+docker push $GAR_REGISTRY/web-ui:latest
+docker push $GAR_REGISTRY/web-ui:1.0.0
+docker push $GAR_REGISTRY/api-service:latest
+docker push $GAR_REGISTRY/api-service:1.0.0
+docker push $GAR_REGISTRY/ai-service:latest
+docker push $GAR_REGISTRY/ai-service:1.0.0
+
+# 5. Verify
+gcloud artifacts docker images list $GAR_REGISTRY
+```
+
+---
+
+#### Updating Kubernetes Manifests After Push
+
+Once images are pushed to a registry, update the `image` field in each K8s deployment manifest:
+
+```yaml
+# Example: infra/k8s/base/api-service.yaml
+containers:
+  - name: api-service
+    image: us-central1-docker.pkg.dev/my-project/tripmind/api-service:1.0.0
+    #                                ↑ replace with your actual registry path
+```
+
+Or use `kustomize` image overrides without modifying base manifests:
+
+```yaml
+# infra/k8s/kustomization.yaml
+images:
+  - name: tripmind/web-ui
+    newName: us-central1-docker.pkg.dev/my-project/tripmind/web-ui
+    newTag: "1.0.0"
+  - name: tripmind/api-service
+    newName: us-central1-docker.pkg.dev/my-project/tripmind/api-service
+    newTag: "1.0.0"
+  - name: tripmind/ai-service
+    newName: us-central1-docker.pkg.dev/my-project/tripmind/ai-service
+    newTag: "1.0.0"
+```
+
+> [!WARNING]
+> Avoid using the `latest` tag in production K8s manifests. Always pin to a specific version (e.g., `1.0.0` or a Git SHA) so rollbacks and audits are reliable.
+
+---
+
+#### Quick Reference: Build → Tag → Push (all services)
+
+A one-shot script to build, tag, and push all three services:
+
+```bash
+#!/bin/bash
+set -e
+
+REGISTRY="${1:?Usage: ./push-images.sh <REGISTRY> <TAG>}"
+TAG="${2:-latest}"
+
+SERVICES=("apps/web-ui:web-ui" "services/api-service:api-service" "services/ai-service:ai-service")
+
+for entry in "${SERVICES[@]}"; do
+  CONTEXT="${entry%%:*}"
+  NAME="${entry##*:}"
+
+  echo "══════════════════════════════════════"
+  echo "  Building & pushing ${NAME}:${TAG}"
+  echo "══════════════════════════════════════"
+
+  docker build -t "${REGISTRY}/${NAME}:${TAG}" "./${CONTEXT}"
+  docker push "${REGISTRY}/${NAME}:${TAG}"
+done
+
+echo "✅ All images pushed to ${REGISTRY} with tag ${TAG}"
+```
+
+Usage:
+```bash
+# Docker Hub
+./scripts/push-images.sh yourusername/tripmind 1.0.0
+
+# AWS ECR
+./scripts/push-images.sh 123456789012.dkr.ecr.us-east-1.amazonaws.com/tripmind 1.0.0
+
+# GCP Artifact Registry
+./scripts/push-images.sh us-central1-docker.pkg.dev/my-project/tripmind 1.0.0
+```
 
 ### Docker Compose (Production)
 

@@ -139,7 +139,7 @@ interface ActionCardComponentProps {
 
 const ActionCard: React.FC<ActionCardComponentProps> = ({ node, onHelpRequest, onElementClick }) => {
     const [isFlipped, setIsFlipped] = useState(false);
-    const flipTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const flipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const tasks = node.tasks || [];
     const recommendations = node.recommendations || [];
