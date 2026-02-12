@@ -57,7 +57,7 @@ const Signup: React.FC = () => {
                         </svg>
                     </div>
                     <h1 className="login-title">Create Account</h1>
-                    <p className="login-subtitle">Join TripMind to plan your next adventure</p>
+                    <p className="login-subtitle">Join TravelRekha to plan your next adventure</p>
                 </div>
 
                 {/* Google Sign-in Button */}

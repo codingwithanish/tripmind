@@ -1,14 +1,12 @@
 import { io, Socket } from 'socket.io-client';
 import {
-    TimelineData,
-    TimelineWebSocketEvent,
     CompleteTimelineEvent,
     NewNodeEvent,
     DeleteNodeEvent,
     AddNodeElementEvent,
     UpdateNodeElementEvent,
     DeleteNodeElementEvent,
-} from '../types/websocket.types';
+} from '@/types/websocket.types';
 
 const SOCKET_URL = import.meta.env.VITE_API_BASE_URL?.replace('/api/v1', '') || 'http://localhost:5000';
 
@@ -21,6 +19,7 @@ interface TimelineSocketHandlers {
     onAddNodeElement?: EventHandler<AddNodeElementEvent>;
     onUpdateNodeElement?: EventHandler<UpdateNodeElementEvent>;
     onDeleteNodeElement?: EventHandler<DeleteNodeElementEvent>;
+    onLoading?: () => void;
     onConnect?: () => void;
     onDisconnect?: () => void;
     onError?: (error: Error) => void;
@@ -31,7 +30,7 @@ class TimelineWebSocketService {
     private handlers: TimelineSocketHandlers = {};
     private currentTimelineId: string | null = null;
     private currentVersion: number = 0;
-    private reconnectAttempts: number = 0;
+    // private reconnectAttempts: number = 0; // Removed unused variable
     private maxReconnectAttempts: number = 5;
 
     connect(timelineId: string, handlers: TimelineSocketHandlers): void {
@@ -57,7 +56,7 @@ class TimelineWebSocketService {
         // Connection events
         this.socket.on('connect', () => {
             console.log('Timeline WebSocket connected');
-            this.reconnectAttempts = 0;
+            // this.reconnectAttempts = 0; // Removed unused variable
             this.handlers.onConnect?.();
 
             // Join timeline room
@@ -81,6 +80,11 @@ class TimelineWebSocketService {
             console.log('Received complete-timeline event', event);
             this.currentVersion = event.data.version;
             this.handlers.onCompleteTimeline?.(event);
+        });
+
+        this.socket.on('loading', () => {
+            console.log('Timeline loading started');
+            this.handlers.onLoading?.();
         });
 
         this.socket.on('new-node', (event: NewNodeEvent) => {

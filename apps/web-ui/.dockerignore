@@ -1,0 +1,10 @@
+node_modules
+dist
+.git
+.gitignore
+.env*
+*.md
+.vscode
+.eslintrc.json
+tsc_check.txt
+test

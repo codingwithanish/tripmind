@@ -11,7 +11,7 @@ const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-  const [notificationCount, setNotificationCount] = useState(3); // Mock notification count
+  const [notificationCount] = useState(3); // Mock notification count
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close mobile menu when route changes
@@ -82,7 +82,7 @@ const Header: React.FC = () => {
         <div className="header-container">
           {/* Logo */}
           <Link to={ROUTES.HOME} className="header-logo">
-            <span className="logo-text">TripMind</span>
+            <span className="logo-text">TravelRekha</span>
           </Link>
 
           {/* Desktop Navigation */}

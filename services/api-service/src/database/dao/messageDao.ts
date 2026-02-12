@@ -1,5 +1,5 @@
 import { prisma } from '../prismaClient';
-import { Message, MessageRole, MessageType, MessageStatus, Prisma } from '@prisma/client';
+import { Message, MessageRole, MessageType, MessageStatus, MessageStage, Prisma } from '@prisma/client';
 
 // Input types
 export interface CreateMessageInput {
@@ -9,7 +9,9 @@ export interface CreateMessageInput {
     type: MessageType;
     content: string | Buffer;
     status?: MessageStatus;
+    messageStage?: MessageStage;
     metadata?: Record<string, any>;
+    helpContext?: Record<string, any>;
 }
 
 export interface UpdateMessageInput {
@@ -88,6 +90,33 @@ class MessageDao {
     }
 
     /**
+     * Find all messages for a thread filtered by message stage
+     */
+    async findByThreadIdAndStage(
+        threadId: string,
+        stage: MessageStage,
+        page: number = 1,
+        limit: number = 50
+    ): Promise<{ messages: DecodedMessage[]; total: number }> {
+        const skip = (page - 1) * limit;
+
+        const [messages, total] = await Promise.all([
+            prisma.message.findMany({
+                where: { threadId, messageStage: stage },
+                skip,
+                take: limit,
+                orderBy: { createdAt: 'asc' },
+            }),
+            prisma.message.count({ where: { threadId, messageStage: stage } }),
+        ]);
+
+        return {
+            messages: messages.map((m) => this.transformMessage(m)),
+            total,
+        };
+    }
+
+    /**
      * Get latest messages in a thread
      */
     async findLatest(threadId: string, count: number = 10): Promise<DecodedMessage[]> {
@@ -113,7 +142,9 @@ class MessageDao {
                 type: data.type,
                 content: this.encodeContent(data.content),
                 status: data.status ?? 'sent',
+                messageStage: data.messageStage ?? 'init',
                 metadata: data.metadata as any,
+                helpContext: data.helpContext as any,
             },
         });
 
@@ -127,7 +158,9 @@ class MessageDao {
         threadId: string,
         senderId: string,
         content: string,
-        type: MessageType = 'text'
+        type: MessageType = 'text',
+        messageStage: MessageStage = 'init',
+        helpContext?: Record<string, any>
     ): Promise<DecodedMessage> {
         return this.create({
             threadId,
@@ -135,6 +168,8 @@ class MessageDao {
             role: 'user',
             type,
             content,
+            messageStage,
+            helpContext,
         });
     }
 
@@ -145,7 +180,8 @@ class MessageDao {
         threadId: string,
         content: string,
         type: MessageType = 'markdown',
-        metadata?: Record<string, any>
+        metadata?: Record<string, any>,
+        messageStage: MessageStage = 'init'
     ): Promise<DecodedMessage> {
         return this.create({
             threadId,
@@ -154,6 +190,7 @@ class MessageDao {
             type,
             content,
             metadata,
+            messageStage,
         });
     }
 

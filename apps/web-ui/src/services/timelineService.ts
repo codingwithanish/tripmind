@@ -4,8 +4,8 @@ import {
   TimelineItem,
   CreateTimelineItemData,
   UpdateTimelineItemData,
-} from '@types/timeline.types';
-import { ApiResponse } from '@types/api.types';
+} from '@/types/timeline.types';
+import { ApiResponse } from '@/types/api.types';
 
 const timelineService = {
   // Get timeline for a travel

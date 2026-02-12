@@ -1,4 +1,4 @@
-export const APP_NAME = 'TripMind';
+export const APP_NAME = 'TravelRekha';
 
 export const ROUTES = {
   HOME: '/',

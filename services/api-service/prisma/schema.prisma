@@ -69,6 +69,12 @@ enum MessageStatus {
   failed
 }
 
+enum MessageStage {
+  init
+  timeline_generation
+  timeline_support
+}
+
 enum TimelineStatus {
   draft
   in_progress
@@ -272,7 +278,9 @@ model Message {
   type                  MessageType
   content               Bytes     @db.ByteA
   status                MessageStatus @default(sent)
+  messageStage          MessageStage @default(init) @map("message_stage")
   metadata              Json?     @db.JsonB
+  helpContext           Json?     @map("help_context") @db.JsonB
   createdAt             DateTime  @default(now()) @map("created_at")
 
   // Relations

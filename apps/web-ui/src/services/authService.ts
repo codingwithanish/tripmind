@@ -1,6 +1,6 @@
 import api from './api';
-import { AuthResponse, LoginCredentials, RegisterData, User } from '@types/user.types';
-import { ApiResponse } from '@types/api.types';
+import { AuthResponse, LoginCredentials, RegisterData, User } from '@/types/user.types';
+import { ApiResponse } from '@/types/api.types';
 
 const authService = {
   // Login with email and password

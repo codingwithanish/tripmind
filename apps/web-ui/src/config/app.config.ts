@@ -5,7 +5,7 @@ export const appConfig = {
   facebookAppId: import.meta.env.VITE_FACEBOOK_APP_ID || '',
 
   // App settings
-  appName: 'TripMind',
+  appName: 'TravelRekha',
   defaultCurrency: 'USD',
   defaultLocale: 'en-US',
 

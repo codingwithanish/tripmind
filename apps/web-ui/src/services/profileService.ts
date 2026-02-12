@@ -1,5 +1,5 @@
 import api from './api';
-import type { ApiResponse } from '@types/api.types';
+import type { ApiResponse } from '@/types/api.types';
 // Note: Removed ApiError from usage if not needed, or keep it.
 // Actually interface for Member/ProfileData is here.
 

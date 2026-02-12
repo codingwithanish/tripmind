@@ -6,3 +6,6 @@ export type * from './TimelineTypes';
 export { default as TimelineChat } from './TimelineChat';
 export { default as TimelineNotificationsPanel } from './TimelineNotificationsPanel';
 export { default as TimelineSettingsPanel } from './TimelineSettingsPanel';
+
+// Element Panels for search results
+export * from './ElementPanels';

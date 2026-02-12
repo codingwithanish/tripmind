@@ -1,0 +1,15 @@
+node_modules
+dist
+.git
+.gitignore
+.env
+.env.*
+*.md
+.vscode
+.eslintrc.json
+nodemon.json
+tsc_check.txt
+tsc_errors.txt
+ts_errors.txt
+ts_errors_2.txt
+prisma_output.txt

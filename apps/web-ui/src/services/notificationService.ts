@@ -1,6 +1,6 @@
 import api from './api';
-import { Notification } from '@types/notification.types';
-import { ApiResponse } from '@types/api.types';
+import { Notification } from '@/types/notification.types';
+import { ApiResponse } from '@/types/api.types';
 
 const notificationService = {
   // Get all notifications for current user
