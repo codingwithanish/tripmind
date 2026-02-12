@@ -1,12 +1,11 @@
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: postgres
   labels:
     app: postgres
     component: database
 spec:
-  serviceName: postgres
   replicas: 1
   selector:
     matchLabels:
@@ -31,7 +30,7 @@ spec:
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: tripmind-secrets
+                  name: travelrekha-secrets
                   key: postgres-password
             - name: POSTGRES_DB
               value: "tripmind"
@@ -63,14 +62,10 @@ spec:
           volumeMounts:
             - name: postgres-storage
               mountPath: /var/lib/postgresql/data
-  volumeClaimTemplates:
-    - metadata:
-        name: postgres-storage
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        resources:
-          requests:
-            storage: 5Gi
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-pvc
 ---
 apiVersion: v1
 kind: Service

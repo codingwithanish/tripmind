@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: web-ui
-          image: tripmind/web-ui:latest
+          image: anishantony/travelrekha-web-ui:latest
           ports:
             - containerPort: 80
           resources:

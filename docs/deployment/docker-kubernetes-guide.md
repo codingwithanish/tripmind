@@ -14,10 +14,23 @@ Comprehensive guide for containerizing and deploying the TripMind application us
    - [Pushing Images to a Container Registry](#pushing-images-to-a-container-registry)
    - [Docker Compose (Production)](#docker-compose-production)
    - [Docker Compose (Development)](#docker-compose-development)
-5. [Kubernetes Deployment](#kubernetes-deployment)
-   - [Namespace Setup](#namespace-setup)
-   - [Secrets Configuration](#secrets-configuration)
-   - [Deploying with Kustomize](#deploying-with-kustomize)
+### Hetzner Cloud Storage Setup
+
+If deploying on Hetzner Cloud, you need to set up the CSI driver to support persistent volumes.
+
+1.  **Create API Token**:
+    - Go to Hetzner Cloud Console -> Security -> API Tokens.
+    - Create a token with Read & Write permissions.
+
+2.  **Create Secret**:
+    ```bash
+    kubectl -n kube-system create secret generic hcloud --from-literal=token=<YOUR-TOKEN>
+    ```
+
+3.  **Install CSI Driver**:
+    ```bash
+    kubectl apply -f https://raw.githubusercontent.com/hetznercloud/csi-driver/main/deploy/kubernetes/hcloud-csi.yml
+    ```
 6. [Environment Variables Reference](#environment-variables-reference)
 7. [Service Details](#service-details)
 8. [Troubleshooting](#troubleshooting)
@@ -29,7 +42,7 @@ Comprehensive guide for containerizing and deploying the TripMind application us
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                      Ingress (nginx)                    │
-│              tripmind.com  │  api.tripmind.com          │
+│              travelrekha.com  │  api.travelrekha.com          │
 └─────────┬─────────────────┴──────────┬──────────────────┘
           │                            │
           ▼                            ▼
@@ -50,9 +63,9 @@ Comprehensive guide for containerizing and deploying the TripMind application us
 
 | Service | Technology | Port | Image |
 |---------|-----------|------|-------|
-| **web-ui** | React, Vite, nginx | 80 | `tripmind/web-ui` |
-| **api-service** | Express, TypeScript, Prisma | 5000 | `tripmind/api-service` |
-| **ai-service** | FastAPI, Google ADK, Python 3.11 | 8001 | `tripmind/ai-service` |
+| **web-ui** | React, Vite, nginx | 80 | `travelrekha/web-ui` |
+| **api-service** | Express, TypeScript, Prisma | 5000 | `travelrekha/api-service` |
+| **ai-service** | FastAPI, Google ADK, Python 3.11 | 8001 | `travelrekha/ai-service` |
 | **postgres** | PostgreSQL 16 | 5432 | `postgres:16-alpine` |
 
 ---
@@ -78,7 +91,7 @@ For local K8s development, install one of:
 ## Project Structure
 
 ```
-tripmind/
+travelrekha/
 ├── apps/
 │   └── web-ui/
 │       ├── Dockerfile          ← Multi-stage: Node build → nginx
@@ -124,13 +137,13 @@ Build each service individually:
 
 ```bash
 # Build web-ui
-docker build -t tripmind/web-ui:latest ./apps/web-ui
+docker build -t travelrekha/web-ui:latest ./apps/web-ui
 
 # Build api-service
-docker build -t tripmind/api-service:latest ./services/api-service
+docker build -t travelrekha/api-service:latest ./services/api-service
 
 # Build ai-service
-docker build -t tripmind/ai-service:latest ./services/ai-service
+docker build -t travelrekha/ai-service:latest ./services/ai-service
 ```
 
 #### Build Arguments (web-ui)
@@ -139,10 +152,10 @@ The web-ui Dockerfile supports build-time arguments for Vite environment variabl
 
 ```bash
 docker build \
-  --build-arg VITE_API_BASE_URL=https://api.tripmind.com/api/v1 \
-  --build-arg VITE_SOCKET_URL=https://api.tripmind.com \
+  --build-arg VITE_API_BASE_URL=https://api.travelrekha.com/api/v1 \
+  --build-arg VITE_SOCKET_URL=https://api.travelrekha.com \
   --build-arg VITE_GOOGLE_CLIENT_ID=your-google-client-id \
-  -t tripmind/web-ui:latest ./apps/web-ui
+  -t travelrekha/web-ui:latest ./apps/web-ui
 ```
 
 > [!IMPORTANT]
@@ -158,17 +171,17 @@ Use semantic versioning alongside `latest`:
 
 ```bash
 # Tag with version and latest
-docker tag tripmind/web-ui:latest       <REGISTRY>/tripmind/web-ui:1.0.0
-docker tag tripmind/web-ui:latest       <REGISTRY>/tripmind/web-ui:latest
-docker tag tripmind/api-service:latest  <REGISTRY>/tripmind/api-service:1.0.0
-docker tag tripmind/api-service:latest  <REGISTRY>/tripmind/api-service:latest
-docker tag tripmind/ai-service:latest   <REGISTRY>/tripmind/ai-service:1.0.0
-docker tag tripmind/ai-service:latest   <REGISTRY>/tripmind/ai-service:latest
+docker tag travelrekha/web-ui:latest       <REGISTRY>/travelrekha/web-ui:1.0.0
+docker tag travelrekha/web-ui:latest       <REGISTRY>/travelrekha/web-ui:latest
+docker tag travelrekha/api-service:latest  <REGISTRY>/travelrekha/api-service:1.0.0
+docker tag travelrekha/api-service:latest  <REGISTRY>/travelrekha/api-service:latest
+docker tag travelrekha/ai-service:latest   <REGISTRY>/travelrekha/ai-service:1.0.0
+docker tag travelrekha/ai-service:latest   <REGISTRY>/travelrekha/ai-service:latest
 ```
 
 > [!TIP]
 > For CI/CD, also tag with the Git commit SHA for traceability:
-> `docker tag tripmind/web-ui:latest <REGISTRY>/tripmind/web-ui:$(git rev-parse --short HEAD)`
+> `docker tag travelrekha/web-ui:latest <REGISTRY>/travelrekha/web-ui:$(git rev-parse --short HEAD)`
 
 ---
 
@@ -178,33 +191,33 @@ The simplest option for public/private images.
 
 ```bash
 # 1. Login to Docker Hub
-docker login
+docker login-*
 
 # 2. Tag images (replace "yourusername" with your Docker Hub username)
-docker tag tripmind/web-ui:latest       yourusername/tripmind-web-ui:latest
-docker tag tripmind/web-ui:latest       yourusername/tripmind-web-ui:1.0.0
-docker tag tripmind/api-service:latest  yourusername/tripmind-api-service:latest
-docker tag tripmind/api-service:latest  yourusername/tripmind-api-service:1.0.0
-docker tag tripmind/ai-service:latest   yourusername/tripmind-ai-service:latest
-docker tag tripmind/ai-service:latest   yourusername/tripmind-ai-service:1.0.0
+docker tag travelrekha/web-ui:latest       anishantony/travelrekha-web-ui:latest
+docker tag travelrekha/web-ui:latest       anishantony/travelrekha-web-ui:1.0.0
+docker tag travelrekha/api-service:latest  anishantony/travelrekha-api-service:latest
+docker tag travelrekha/api-service:latest  anishantony/travelrekha-api-service:1.0.0
+docker tag travelrekha/ai-service:latest   anishantony/travelrekha-ai-service:latest
+docker tag travelrekha/ai-service:latest   anishantony/travelrekha-ai-service:1.0.0
 
 # 3. Push all images
-docker push yourusername/tripmind-web-ui:latest
-docker push yourusername/tripmind-web-ui:1.0.0
-docker push yourusername/tripmind-api-service:latest
-docker push yourusername/tripmind-api-service:1.0.0
-docker push yourusername/tripmind-ai-service:latest
-docker push yourusername/tripmind-ai-service:1.0.0
+docker push anishantony/travelrekha-web-ui:latest
+docker push anishantony/travelrekha-web-ui:1.0.0
+docker push anishantony/travelrekha-api-service:latest
+docker push anishantony/travelrekha-api-service:1.0.0
+docker push anishantony/travelrekha-ai-service:latest
+docker push anishantony/travelrekha-ai-service:1.0.0
 
 # 4. Verify on Docker Hub
-#    Visit https://hub.docker.com/r/yourusername/tripmind-web-ui
+#    Visit https://hub.docker.com/r/yourusername/travelrekha-web-ui
 ```
 
 For private repos, create a Kubernetes pull secret:
 
 ```bash
 kubectl create secret docker-registry dockerhub-creds \
-  --namespace=tripmind \
+  --namespace=travelrekha \
   --docker-server=https://index.docker.io/v1/ \
   --docker-username=yourusername \
   --docker-password=YOUR_ACCESS_TOKEN \
@@ -229,9 +242,9 @@ Best for deployments on AWS EKS.
 
 ```bash
 # 1. Create repositories (one-time setup)
-aws ecr create-repository --repository-name tripmind/web-ui
-aws ecr create-repository --repository-name tripmind/api-service
-aws ecr create-repository --repository-name tripmind/ai-service
+aws ecr create-repository --repository-name travelrekha/web-ui
+aws ecr create-repository --repository-name travelrekha/api-service
+aws ecr create-repository --repository-name travelrekha/ai-service
 
 # 2. Login to ECR
 aws ecr get-login-password --region us-east-1 | \
@@ -240,23 +253,23 @@ aws ecr get-login-password --region us-east-1 | \
 
 # 3. Tag images
 export ECR_REGISTRY=123456789012.dkr.ecr.us-east-1.amazonaws.com
-docker tag tripmind/web-ui:latest       $ECR_REGISTRY/tripmind/web-ui:latest
-docker tag tripmind/web-ui:latest       $ECR_REGISTRY/tripmind/web-ui:1.0.0
-docker tag tripmind/api-service:latest  $ECR_REGISTRY/tripmind/api-service:latest
-docker tag tripmind/api-service:latest  $ECR_REGISTRY/tripmind/api-service:1.0.0
-docker tag tripmind/ai-service:latest   $ECR_REGISTRY/tripmind/ai-service:latest
-docker tag tripmind/ai-service:latest   $ECR_REGISTRY/tripmind/ai-service:1.0.0
+docker tag travelrekha/web-ui:latest       $ECR_REGISTRY/travelrekha/web-ui:latest
+docker tag travelrekha/web-ui:latest       $ECR_REGISTRY/travelrekha/web-ui:1.0.0
+docker tag travelrekha/api-service:latest  $ECR_REGISTRY/travelrekha/api-service:latest
+docker tag travelrekha/api-service:latest  $ECR_REGISTRY/travelrekha/api-service:1.0.0
+docker tag travelrekha/ai-service:latest   $ECR_REGISTRY/travelrekha/ai-service:latest
+docker tag travelrekha/ai-service:latest   $ECR_REGISTRY/travelrekha/ai-service:1.0.0
 
 # 4. Push all images
-docker push $ECR_REGISTRY/tripmind/web-ui:latest
-docker push $ECR_REGISTRY/tripmind/web-ui:1.0.0
-docker push $ECR_REGISTRY/tripmind/api-service:latest
-docker push $ECR_REGISTRY/tripmind/api-service:1.0.0
-docker push $ECR_REGISTRY/tripmind/ai-service:latest
-docker push $ECR_REGISTRY/tripmind/ai-service:1.0.0
+docker push $ECR_REGISTRY/travelrekha/web-ui:latest
+docker push $ECR_REGISTRY/travelrekha/web-ui:1.0.0
+docker push $ECR_REGISTRY/travelrekha/api-service:latest
+docker push $ECR_REGISTRY/travelrekha/api-service:1.0.0
+docker push $ECR_REGISTRY/travelrekha/ai-service:latest
+docker push $ECR_REGISTRY/travelrekha/ai-service:1.0.0
 
 # 5. Verify
-aws ecr describe-images --repository-name tripmind/web-ui
+aws ecr describe-images --repository-name travelrekha/web-ui
 ```
 
 > [!NOTE]
@@ -270,7 +283,7 @@ Best for deployments on GKE.
 
 ```bash
 # 1. Create repository (one-time setup)
-gcloud artifacts repositories create tripmind \
+gcloud artifacts repositories create travelrekha \
   --repository-format=docker \
   --location=us-central1 \
   --description="TripMind Docker images"
@@ -279,13 +292,13 @@ gcloud artifacts repositories create tripmind \
 gcloud auth configure-docker us-central1-docker.pkg.dev
 
 # 3. Tag images
-export GAR_REGISTRY=us-central1-docker.pkg.dev/YOUR_PROJECT_ID/tripmind
-docker tag tripmind/web-ui:latest       $GAR_REGISTRY/web-ui:latest
-docker tag tripmind/web-ui:latest       $GAR_REGISTRY/web-ui:1.0.0
-docker tag tripmind/api-service:latest  $GAR_REGISTRY/api-service:latest
-docker tag tripmind/api-service:latest  $GAR_REGISTRY/api-service:1.0.0
-docker tag tripmind/ai-service:latest   $GAR_REGISTRY/ai-service:latest
-docker tag tripmind/ai-service:latest   $GAR_REGISTRY/ai-service:1.0.0
+export GAR_REGISTRY=us-central1-docker.pkg.dev/YOUR_PROJECT_ID/travelrekha
+docker tag travelrekha/web-ui:latest       $GAR_REGISTRY/web-ui:latest
+docker tag travelrekha/web-ui:latest       $GAR_REGISTRY/web-ui:1.0.0
+docker tag travelrekha/api-service:latest  $GAR_REGISTRY/api-service:latest
+docker tag travelrekha/api-service:latest  $GAR_REGISTRY/api-service:1.0.0
+docker tag travelrekha/ai-service:latest   $GAR_REGISTRY/ai-service:latest
+docker tag travelrekha/ai-service:latest   $GAR_REGISTRY/ai-service:1.0.0
 
 # 4. Push all images
 docker push $GAR_REGISTRY/web-ui:latest
@@ -309,7 +322,7 @@ Once images are pushed to a registry, update the `image` field in each K8s deplo
 # Example: infra/k8s/base/api-service.yaml
 containers:
   - name: api-service
-    image: us-central1-docker.pkg.dev/my-project/tripmind/api-service:1.0.0
+    image: us-central1-docker.pkg.dev/my-project/travelrekha/api-service:1.0.0
     #                                ↑ replace with your actual registry path
 ```
 
@@ -318,14 +331,14 @@ Or use `kustomize` image overrides without modifying base manifests:
 ```yaml
 # infra/k8s/kustomization.yaml
 images:
-  - name: tripmind/web-ui
-    newName: us-central1-docker.pkg.dev/my-project/tripmind/web-ui
+  - name: travelrekha/web-ui
+    newName: us-central1-docker.pkg.dev/my-project/travelrekha/web-ui
     newTag: "1.0.0"
-  - name: tripmind/api-service
-    newName: us-central1-docker.pkg.dev/my-project/tripmind/api-service
+  - name: travelrekha/api-service
+    newName: us-central1-docker.pkg.dev/my-project/travelrekha/api-service
     newTag: "1.0.0"
-  - name: tripmind/ai-service
-    newName: us-central1-docker.pkg.dev/my-project/tripmind/ai-service
+  - name: travelrekha/ai-service
+    newName: us-central1-docker.pkg.dev/my-project/travelrekha/ai-service
     newTag: "1.0.0"
 ```
 
@@ -365,13 +378,13 @@ echo "✅ All images pushed to ${REGISTRY} with tag ${TAG}"
 Usage:
 ```bash
 # Docker Hub
-./scripts/push-images.sh yourusername/tripmind 1.0.0
+./scripts/push-images.sh yourusername/travelrekha 1.0.0
 
 # AWS ECR
-./scripts/push-images.sh 123456789012.dkr.ecr.us-east-1.amazonaws.com/tripmind 1.0.0
+./scripts/push-images.sh 123456789012.dkr.ecr.us-east-1.amazonaws.com/travelrekha 1.0.0
 
 # GCP Artifact Registry
-./scripts/push-images.sh us-central1-docker.pkg.dev/my-project/tripmind 1.0.0
+./scripts/push-images.sh us-central1-docker.pkg.dev/my-project/travelrekha 1.0.0
 ```
 
 ### Docker Compose (Production)
@@ -380,7 +393,7 @@ Start all services with a single command:
 
 ```bash
 # Navigate to project root
-cd tripmind
+cd travelrekha
 
 # Create a .env file for secrets
 cp infra/docker/env/.env.example infra/docker/.env
@@ -439,7 +452,7 @@ This overrides production settings with:
 
 ```bash
 # Create the namespace
-kubectl create namespace tripmind
+kubectl create namespace travelrekha
 ```
 
 ### Secrets Configuration
@@ -455,17 +468,17 @@ echo -n "your-actual-password" | base64
 
 # Edit infra/k8s/base/secrets.yaml with your base64-encoded values
 # Then apply:
-kubectl apply -f infra/k8s/base/secrets.yaml -n tripmind
+kubectl apply -f infra/k8s/base/secrets.yaml -n travelrekha
 ```
 
 **Option B: Create secrets imperatively** (recommended for production)
 
 ```bash
-kubectl create secret generic tripmind-secrets \
-  --namespace=tripmind \
-  --from-literal=postgres-user=tripmind \
+kubectl create secret generic travelrekha-secrets \
+  --namespace=travelrekha \
+  --from-literal=postgres-user=travelrekha \
   --from-literal=postgres-password=YOUR_SECURE_PASSWORD \
-  --from-literal=database-url="postgresql://tripmind:YOUR_SECURE_PASSWORD@postgres:5432/tripmind?schema=public" \
+  --from-literal=database-url="postgresql://travelrekha:YOUR_SECURE_PASSWORD@postgres:5432/travelrekha?schema=public" \
   --from-literal=jwt-secret=YOUR_JWT_SECRET \
   --from-literal=google-client-id=YOUR_GOOGLE_CLIENT_ID \
   --from-literal=google-client-secret=YOUR_GOOGLE_CLIENT_SECRET \
@@ -482,10 +495,10 @@ kubectl kustomize infra/k8s/
 kubectl apply -k infra/k8s/
 
 # Check deployment status
-kubectl get all -n tripmind
+kubectl get all -n travelrekha
 
 # Watch pods come up
-kubectl get pods -n tripmind -w
+kubectl get pods -n travelrekha -w
 ```
 
 ### Deployment Order
@@ -502,22 +515,22 @@ Kustomize applies resources in this order:
 
 ```bash
 # Check pod status
-kubectl get pods -n tripmind
+kubectl get pods -n travelrekha
 
 # Check service endpoints
-kubectl get svc -n tripmind
+kubectl get svc -n travelrekha
 
 # View logs for a specific service
-kubectl logs -f deployment/api-service -n tripmind
-kubectl logs -f deployment/ai-service -n tripmind
-kubectl logs -f deployment/web-ui -n tripmind
+kubectl logs -f deployment/api-service -n travelrekha
+kubectl logs -f deployment/ai-service -n travelrekha
+kubectl logs -f deployment/web-ui -n travelrekha
 
 # Check database connectivity
-kubectl exec -it statefulset/postgres -n tripmind -- psql -U tripmind -d tripmind
+kubectl exec -it statefulset/postgres -n travelrekha -- psql -U travelrekha -d travelrekha
 
 # Port-forward to access services locally
-kubectl port-forward svc/web-ui 8080:80 -n tripmind
-kubectl port-forward svc/api-service 5000:5000 -n tripmind
+kubectl port-forward svc/web-ui 8080:80 -n travelrekha
+kubectl port-forward svc/api-service 5000:5000 -n travelrekha
 ```
 
 ### Scaling
@@ -526,10 +539,10 @@ To scale a service (the manifests default to 1 replica as configured):
 
 ```bash
 # Scale api-service to 3 replicas
-kubectl scale deployment/api-service --replicas=3 -n tripmind
+kubectl scale deployment/api-service --replicas=3 -n travelrekha
 
 # Scale web-ui to 2 replicas
-kubectl scale deployment/web-ui --replicas=2 -n tripmind
+kubectl scale deployment/web-ui --replicas=2 -n travelrekha
 ```
 
 > [!NOTE]
@@ -576,9 +589,9 @@ kubectl scale deployment/web-ui --replicas=2 -n tripmind
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `POSTGRES_USER` | Database user | `tripmind` |
+| `POSTGRES_USER` | Database user | `travelrekha` |
 | `POSTGRES_PASSWORD` | Database password | — (from Secret) |
-| `POSTGRES_DB` | Database name | `tripmind` |
+| `POSTGRES_DB` | Database name | `travelrekha` |
 
 ---
 
@@ -638,28 +651,28 @@ Python 3.11 slim
 
 | Issue | Solution |
 |-------|----------|
-| Pods stuck in `Pending` | Check events: `kubectl describe pod <name> -n tripmind`. Common cause: insufficient resources or missing PVC StorageClass |
-| Pods in `CrashLoopBackOff` | Check logs: `kubectl logs <pod> -n tripmind`. Usually a missing env var or DB connection issue |
-| Secrets not found | Ensure secrets are created before deployments: `kubectl get secrets -n tripmind` |
+| Pods stuck in `Pending` | Check events: `kubectl describe pod <name> -n travelrekha`. Common cause: insufficient resources or missing PVC StorageClass |
+| Pods in `CrashLoopBackOff` | Check logs: `kubectl logs <pod> -n travelrekha`. Usually a missing env var or DB connection issue |
+| Secrets not found | Ensure secrets are created before deployments: `kubectl get secrets -n travelrekha` |
 | Ingress not working | Verify ingress controller is installed: `kubectl get pods -n ingress-nginx` |
-| Database connection refused | Check postgres pod is running: `kubectl get pods -l app=postgres -n tripmind` |
+| Database connection refused | Check postgres pod is running: `kubectl get pods -l app=postgres -n travelrekha` |
 | PVC stuck in `Pending` | Check if a default StorageClass exists: `kubectl get storageclass` |
 
 ### Useful Debug Commands
 
 ```bash
 # Get pod events
-kubectl describe pod <pod-name> -n tripmind
+kubectl describe pod <pod-name> -n travelrekha
 
 # Interactive shell into a pod
-kubectl exec -it <pod-name> -n tripmind -- sh
+kubectl exec -it <pod-name> -n travelrekha -- sh
 
 # Check resource usage
-kubectl top pods -n tripmind
+kubectl top pods -n travelrekha
 
 # Restart a deployment
-kubectl rollout restart deployment/<name> -n tripmind
+kubectl rollout restart deployment/<name> -n travelrekha
 
 # View Prisma migration status
-kubectl exec -it deployment/api-service -n tripmind -- npx prisma migrate status
+kubectl exec -it deployment/api-service -n travelrekha -- npx prisma migrate status
 ```

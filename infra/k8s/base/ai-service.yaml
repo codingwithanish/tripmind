@@ -18,24 +18,24 @@ spec:
     spec:
       containers:
         - name: ai-service
-          image: tripmind/ai-service:latest
+          image: anishantony/travelrekha-ai-service:latest
           ports:
             - containerPort: 8001
           env:
             - name: GOOGLE_API_KEY
               valueFrom:
                 secretKeyRef:
-                  name: tripmind-secrets
+                  name: travelrekha-secrets
                   key: google-api-key
             - name: DEFAULT_MODEL
               valueFrom:
                 configMapKeyRef:
-                  name: tripmind-config
+                  name: travelrekha-config
                   key: default-ai-model
             - name: AI_EXECUTION_MODE
               valueFrom:
                 configMapKeyRef:
-                  name: tripmind-config
+                  name: travelrekha-config
                   key: ai-execution-mode
             - name: HOST
               value: "0.0.0.0"

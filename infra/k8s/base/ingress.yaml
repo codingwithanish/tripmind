@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: tripmind-ingress
+  name: travelrekha-ingress
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
     cert-manager.io/cluster-issuer: letsencrypt-prod
@@ -14,11 +14,11 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - tripmind.com
-        - api.tripmind.com
-      secretName: tripmind-tls
+        - travelrekha.com
+        - api.travelrekha.com
+      secretName: travelrekha-tls
   rules:
-    - host: tripmind.com
+    - host: travelrekha.com
       http:
         paths:
           - path: /
@@ -28,7 +28,7 @@ spec:
                 name: web-ui
                 port:
                   number: 80
-    - host: api.tripmind.com
+    - host: api.travelrekha.com
       http:
         paths:
           - path: /
