@@ -14,23 +14,13 @@ Comprehensive guide for containerizing and deploying the TripMind application us
    - [Pushing Images to a Container Registry](#pushing-images-to-a-container-registry)
    - [Docker Compose (Production)](#docker-compose-production)
    - [Docker Compose (Development)](#docker-compose-development)
-### Hetzner Cloud Storage Setup
-
-If deploying on Hetzner Cloud, you need to set up the CSI driver to support persistent volumes.
-
-1.  **Create API Token**:
-    - Go to Hetzner Cloud Console -> Security -> API Tokens.
-    - Create a token with Read & Write permissions.
-
-2.  **Create Secret**:
-    ```bash
-    kubectl -n kube-system create secret generic hcloud --from-literal=token=<YOUR-TOKEN>
-    ```
-
-3.  **Install CSI Driver**:
-    ```bash
-    kubectl apply -f https://raw.githubusercontent.com/hetznercloud/csi-driver/main/deploy/kubernetes/hcloud-csi.yml
-    ```
+5. [Kubernetes Deployment](#kubernetes-deployment)
+   - [Quick Deploy (Single Command)](#quick-deploy-single-command)
+   - [Hetzner Cloud Storage Setup](#hetzner-cloud-storage-setup)
+   - [Secrets Configuration](#secrets-configuration)
+   - [Deploying with Kustomize](#deploying-with-kustomize)
+   - [Verifying the Deployment](#verifying-the-deployment)
+   - [Scaling](#scaling)
 6. [Environment Variables Reference](#environment-variables-reference)
 7. [Service Details](#service-details)
 8. [Troubleshooting](#troubleshooting)
@@ -448,32 +438,112 @@ This overrides production settings with:
 
 ## Kubernetes Deployment
 
-### Namespace Setup
+### Quick Deploy (Single Command)
+
+The entire stack — namespace, storage, secrets, database, all services, and ingress — can be deployed with a **single Kustomize command**:
 
 ```bash
-# Create the namespace
-kubectl create namespace travelrekha
+# Deploy everything at once
+kubectl apply -k infra/k8s/
 ```
+
+This single command reads `infra/k8s/kustomization.yaml` and applies all resources in the correct dependency order:
+
+| Order | Resource | File |
+|-------|----------|------|
+| 1 | Namespace (`travelrekha`) | `base/namespace.yaml` |
+| 2 | StorageClass (Hetzner CSI) | `base/storageclass.yaml` |
+| 3 | PersistentVolumeClaim | `base/postgres-pvc.yaml` |
+| 4 | ConfigMap | `base/configmap.yaml` |
+| 5 | Secrets | `base/secrets.yaml` |
+| 6 | PostgreSQL (StatefulSet + Service) | `base/postgres.yaml` |
+| 7 | API Service (Deployment + Service) | `base/api-service.yaml` |
+| 8 | AI Service (Deployment + Service) | `base/ai-service.yaml` |
+| 9 | Web UI (Deployment + Service) | `base/web-ui.yaml` |
+| 10 | Ingress | `base/ingress.yaml` |
+
+Kustomize also automatically applies the `travelrekha` namespace and common labels to all resources.
+
+> [!IMPORTANT]
+> Before running the deploy command, make sure you have:
+> 1. Updated `infra/k8s/base/secrets.yaml` with your real base64-encoded secrets (see [Secrets Configuration](#secrets-configuration))
+> 2. Set up the Hetzner CSI driver if deploying on Hetzner Cloud (see [Hetzner Cloud Storage Setup](#hetzner-cloud-storage-setup))
+
+#### Other Useful Kustomize Commands
+
+```bash
+# Preview the generated manifests (dry-run, nothing is applied)
+kubectl kustomize infra/k8s/
+
+# Delete all resources managed by this kustomization
+kubectl delete -k infra/k8s/
+
+# Re-apply after making changes (Kustomize is idempotent)
+kubectl apply -k infra/k8s/
+
+# Watch pods come up after deploy
+kubectl get pods -n travelrekha -w
+
+# Check all resources in the namespace
+kubectl get all -n travelrekha
+```
+
+> [!TIP]
+> You do **not** need to manually create the namespace — it is included in `base/namespace.yaml` and deployed as part of the Kustomize command.
+
+---
+
+### Hetzner Cloud Storage Setup
+
+If deploying on Hetzner Cloud, you need to set up the CSI driver **before** running the deploy command to support persistent volumes.
+
+1. **Create API Token**:
+   - Go to Hetzner Cloud Console → Security → API Tokens.
+   - Create a token with Read & Write permissions.
+
+2. **Create Secret**:
+   ```bash
+   kubectl -n kube-system create secret generic hcloud --from-literal=token=<YOUR-TOKEN>
+   ```
+
+3. **Install CSI Driver**:
+   ```bash
+   kubectl apply -f https://raw.githubusercontent.com/hetznercloud/csi-driver/main/deploy/kubernetes/hcloud-csi.yml
+   ```
+
+4. **Verify CSI Driver**:
+   ```bash
+   kubectl get pods -n kube-system -l app=hcloud-csi
+   kubectl get storageclass
+   ```
+
+---
 
 ### Secrets Configuration
 
 > [!CAUTION]
 > The `secrets.yaml` file in the repo contains **placeholder values only**. Never commit real secrets to version control.
 
-**Option A: Edit the secrets file directly**
+**Option A: Edit the secrets file directly** (applied via Kustomize)
 
 ```bash
 # Encode your values
 echo -n "your-actual-password" | base64
 
 # Edit infra/k8s/base/secrets.yaml with your base64-encoded values
-# Then apply:
-kubectl apply -f infra/k8s/base/secrets.yaml -n travelrekha
+# The secrets will be applied automatically when you run:
+kubectl apply -k infra/k8s/
 ```
 
 **Option B: Create secrets imperatively** (recommended for production)
 
+If you prefer not to store secrets in YAML files, create them imperatively first, then deploy:
+
 ```bash
+# 1. Create the namespace first
+kubectl apply -f infra/k8s/base/namespace.yaml
+
+# 2. Create secrets imperatively
 kubectl create secret generic travelrekha-secrets \
   --namespace=travelrekha \
   --from-literal=postgres-user=travelrekha \
@@ -483,33 +553,19 @@ kubectl create secret generic travelrekha-secrets \
   --from-literal=google-client-id=YOUR_GOOGLE_CLIENT_ID \
   --from-literal=google-client-secret=YOUR_GOOGLE_CLIENT_SECRET \
   --from-literal=google-api-key=YOUR_GOOGLE_API_KEY
+
+# 3. Deploy everything (secrets.yaml will be skipped since it already exists)
+kubectl apply -k infra/k8s/
 ```
+
+---
 
 ### Deploying with Kustomize
 
-```bash
-# Preview the generated manifests
-kubectl kustomize infra/k8s/
-
-# Apply all resources
-kubectl apply -k infra/k8s/
-
-# Check deployment status
-kubectl get all -n travelrekha
-
-# Watch pods come up
-kubectl get pods -n travelrekha -w
-```
-
-### Deployment Order
-
-Kustomize applies resources in this order:
-1. `ConfigMap` + `Secret` — configuration & credentials
-2. `StatefulSet` (postgres) — database with persistent storage
-3. `Deployment` (api-service) — runs Prisma migrations on startup
-4. `Deployment` (ai-service) — stateless AI execution
-5. `Deployment` (web-ui) — static frontend
-6. `Ingress` — external traffic routing
+The `kustomization.yaml` is the single source of truth for all K8s resources. It manages:
+- **Namespace**: All resources are placed in the `travelrekha` namespace
+- **Common Labels**: `app.kubernetes.io/name: tripmind` and `app.kubernetes.io/managed-by: kustomize`
+- **Resources**: All YAML manifests listed in the correct dependency order
 
 ### Verifying the Deployment
 

@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: integration-service
-          image: tripmind/integration-service:latest
+          image: anishantony/travelrekha-integration-service:latest
           ports:
             - containerPort: 8001
           resources:
